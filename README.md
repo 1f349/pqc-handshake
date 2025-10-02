@@ -54,32 +54,52 @@ Could be used by the user for negotiation of algorithms to be used.
 
 #### 1) Connection Rejected
 
+Sent to end the handshake with a failure.
+
 #### 2) Initiate Packet
 ([] Encapsulation data via Remote Public Key) ([] Local Public Key Hash)
 
 (A) Encapsulation can be empty to request the remote public key.
 (B) Local public key hash can be empty to signify that local should be asked to send key.
 
+Sent as the first packet of the handshake from local or after (6), (8) or (10) towards local.
+
 #### 3) Initiate Proof Packet
 ([] Encapsulation data via Remote Public Key) ([] HMAC using encapsulated key from local on the initiate packet bytes)
+
+Sent as a response from remote after a (2), allowing local to validate remote's key.
 
 #### 4) Final Proof Packet
 ([] HMAC using encapsulated key from remote on the initiate proof packet bytes)
 
+Sent as a response from local after a (3), (6), (8) or (10), allowing remote to validate local's key.
+
 #### 5) Public Key Request
+
+Sent as a response from remote after a (2) if the public key from the hash is not found, multi-matched or (2B).
 
 #### 6) Public Key Data Packet
 ([] Local/Remote Public key)
 
+Sent as a response to (2A) or (5).
+
 #### 7) Signature Request
+
+Sent as a response to (6).
 
 #### 8) Public Key Signed Packet
 ([] Signature Data) ([] Hash of Signing Public Key)
 
+Sent as a response to (7).
+
 #### 9) Signature Public Key Request
+
+Sent as a response to (8) if the Signing Public Key is not found or multi-matched.
 
 #### 10) Signed Packet Public Key
 ([] Public Key for Signature)
+
+Sent as a response to (9).
 
 #### 11-31) Reserved for future use
 
@@ -100,6 +120,26 @@ Signature is a byte array represented as base64 when being used in configuration
 (Signature Length) [Signature {Signature Length}] (Issue Time) (Expiry Time)
 
 ### List of Flows
+
+Any handshake stage after (2) can be ended using (1).
+
+A successful handshake is subsequently handled by user packets ((4) received by remote).
+
+These flows are shown in partial where the surrounding flow is the same (As the flows act as portions of state-machines representing the protocol).
+
+2/2B -> 3 -> 4
+
+2/2B -> 5 -> 6 -> 3
+
+2/2B -> 5 -> 6 -> 7 -> 8 -> 3
+
+2/2B -> 5 -> 6 -> 7 -> 8 -> 9 -> 10 -> 3
+
+2A -> 6 -> 2/2B
+
+2A -> 6 -> 7 -> 8 -> 2/2B
+
+2A -> 6 -> 7 -> 8 -> 9 -> 10 -> 2/2B
 
 ## License
 BSD 3-Clause - (C) 1f349 2025
