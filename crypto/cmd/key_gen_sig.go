@@ -1,0 +1,120 @@
+package cmd
+
+import (
+	"fmt"
+	"github.com/1f349/pqc-handshake/crypto"
+	"io"
+	"log"
+	"os"
+	"strings"
+)
+
+func MainKegGenSig(scheme crypto.SigScheme, buildName, buildDate, buildVersion, buildAuthor, buildLicense string) {
+	mainKegGenSig(scheme, buildName, buildDate, buildVersion, buildAuthor, buildLicense, os.Exit, os.Stdout, os.Stdin)
+}
+
+func mainKegGenSig(scheme crypto.SigScheme, buildName, buildDate, buildVersion, buildAuthor, buildLicense string, exit func(code int), stdout *os.File, stdin *os.File) {
+	if len(os.Args) < 3 {
+		usageKG(buildName, buildDate, buildVersion, buildAuthor, buildLicense, exit)
+	} else {
+		if strings.EqualFold(os.Args[1], "g") || strings.EqualFold(os.Args[1], "gen") || strings.EqualFold(os.Args[1], "generate") {
+			var f *os.File
+			if os.Args[2] == "-" {
+				f = stdout
+			} else {
+				var err error
+				f, err = os.OpenFile(os.Args[2], os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0600)
+				if err != nil {
+					log.Println(err)
+					exit(2)
+					return
+				}
+			}
+			defer func() { _ = f.Close() }()
+			_, k, err := scheme.GenerateKey()
+			if err != nil {
+				log.Println(err)
+				exit(3)
+				return
+			}
+			var dat []byte
+			dat, err = k.MarshalBinary()
+			if err != nil {
+				log.Println(err)
+				exit(3)
+				return
+			}
+			_, err = f.Write(dat)
+			if err != nil {
+				log.Println(err)
+				exit(4)
+			}
+			_ = f.Sync()
+			exit(0)
+			return
+		} else if len(os.Args) > 3 && (strings.EqualFold(os.Args[1], "p") || strings.EqualFold(os.Args[1], "pub") || strings.EqualFold(os.Args[1], "public")) {
+			var f *os.File
+			if os.Args[2] == "-" {
+				f = stdin
+			} else {
+				var err error
+				f, err = os.Open(os.Args[2])
+				if err != nil {
+					log.Println(err)
+					exit(2)
+					return
+				}
+			}
+			defer func() { _ = f.Close() }()
+			var fo *os.File
+			if os.Args[3] == "-" {
+				fo = stdout
+			} else {
+				var err error
+				fo, err = os.OpenFile(os.Args[3], os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0600)
+				if err != nil {
+					log.Println(err)
+					exit(2)
+					return
+				}
+			}
+			defer func() { _ = fo.Close() }()
+			bts, err := io.ReadAll(f)
+			if err != nil {
+				log.Println(err)
+				exit(3)
+				return
+			}
+			k, err := scheme.UnmarshalBinaryPrivateKey(bts)
+			if err != nil {
+				log.Println(err)
+				exit(4)
+				return
+			}
+			var dat []byte
+			dat, err = k.Public().MarshalBinary()
+			if err != nil {
+				log.Println(err)
+				exit(5)
+				return
+			}
+			_, err = fo.Write(dat)
+			if err != nil {
+				log.Println(err)
+				exit(6)
+				return
+			}
+			_ = fo.Sync()
+			exit(0)
+			return
+		} else {
+			usageKG(buildName, buildDate, buildVersion, buildAuthor, buildLicense, exit)
+		}
+	}
+}
+
+func usageKG(buildName, buildDate, buildVersion, buildAuthor, buildLicense string, exit func(code int)) {
+	log.Printf("%s #%s (%s) : (C) %s : %s License\n", buildName, buildVersion, buildDate, buildAuthor, buildLicense)
+	fmt.Println("\nUsage:\n" + buildName + " <g/gen/generate> <private key path|->\n" + buildName + " <p/pub/public> <private key path|-> <public key path|->")
+	exit(1)
+}
