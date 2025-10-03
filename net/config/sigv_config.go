@@ -1,16 +1,16 @@
 package config
 
 import (
-	"crypto"
-	thisCrypto "github.com/1f349/pqc-handshake/crypto"
+	"github.com/1f349/pqc-handshake/crypto"
 	"hash"
 )
 
 type SigVerifierConfig struct {
-	Scheme        thisCrypto.SigScheme
+	SigDataHash   hash.Hash
+	Scheme        crypto.SigScheme
 	PublicKeyData []byte
 	publicKeyHash []byte
-	publicKey     crypto.PublicKey
+	publicKey     crypto.SigPublicKey
 	// LastError is the cause of the last failure of PublicKey generation
 	LastError error
 }
@@ -27,7 +27,7 @@ func (svc *SigVerifierConfig) PublicKeyHash(hash hash.Hash) []byte {
 
 // PublicKey constructed from public key data, nil on failure
 // LastError contains the error that caused a failure
-func (svc *SigVerifierConfig) PublicKey() crypto.PublicKey {
+func (svc *SigVerifierConfig) PublicKey() crypto.SigPublicKey {
 	if svc.publicKey == nil {
 		var err error
 		svc.publicKey, err = svc.Scheme.UnmarshalBinaryPublicKey(svc.PublicKeyData)

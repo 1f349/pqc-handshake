@@ -9,6 +9,7 @@ import (
 	"strings"
 )
 
+// MainKegGenSig provides a command for use in main for generating signature keys for the specified crypto.SigScheme
 func MainKegGenSig(scheme crypto.SigScheme, buildName, buildDate, buildVersion, buildAuthor, buildLicense string) {
 	mainKegGenSig(scheme, buildName, buildDate, buildVersion, buildAuthor, buildLicense, os.Exit, os.Stdout, os.Stdin)
 }

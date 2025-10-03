@@ -8,6 +8,7 @@ import (
 	"strings"
 )
 
+// MainKegGenKem provides a command for use in main for generating encapsulation keys for the specified crypto.KemScheme
 func MainKegGenKem(scheme crypto.KemScheme, buildName, buildDate, buildVersion, buildAuthor, buildLicense string) {
 	mainKegGenKem(scheme, buildName, buildDate, buildVersion, buildAuthor, buildLicense, os.Exit, os.Stdout, os.Stdin)
 }
