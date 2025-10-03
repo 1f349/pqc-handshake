@@ -33,6 +33,8 @@ snd is mitigated via specifying the use of a 'collision-resistant' hash function
 
 ? means any positive size
 
+Time is considered in milliseconds from the unix epoch.
+
 ### Structure
 [Type {1 Byte}] [UUID {16 Byte}] [Timestamp {8 Byte}]
 
@@ -51,6 +53,9 @@ if only an unsigned integer is represented, this is denoted as (Field).
 #### 0) Reserved for future use
 
 Could be used by the user for negotiation of algorithms to be used.
+
+If a responder receives this before a (2) has been received, 
+send back an empty packet with this ID.
 
 #### 1) Connection Rejected
 
@@ -111,7 +116,7 @@ Sent as a response to (9).
 
 Signature is a byte array represented as base64 when being used in configuration data.
 
-#### Signed Data
+#### Signed Data aka Signature (Once hashed)
 
 [Public Key {? Bytes}] (Issue Time) (Expiry Time) -> Hashed
 
