@@ -20,7 +20,7 @@ func TestMainKegGenSig(t *testing.T) {
 }
 
 type keyGenTest interface {
-	Main(buildName, buildDate, buildVersion, buildAuthor, buildLicense string, exit func(code int), stdout *os.File, stdin *os.File)
+	Main(buildName, buildDate, buildVersion, buildAuthor, buildLicense string, exit func(code int), stdout, stdin *os.File)
 }
 
 type keyGenTestKem struct{}

@@ -57,8 +57,8 @@ func NewSigData(publicEKey []byte, issueTime, expiryTime time.Time, hash hash.Ha
 	return &SigData{
 		PublicKey:  publicEKey,
 		Signature:  sig,
-		IssueTime:  issueTime,
-		ExpiryTime: expiryTime,
+		IssueTime:  time.UnixMilli(issueTime.UnixMilli()),
+		ExpiryTime: time.UnixMilli(expiryTime.UnixMilli()),
 	}
 }
 

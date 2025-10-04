@@ -72,7 +72,7 @@ func mainKegGenSig(scheme crypto.SigScheme, buildName, buildDate, buildVersion, 
 				fo = stdout
 			} else {
 				var err error
-				fo, err = os.OpenFile(os.Args[3], os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0600)
+				fo, err = os.OpenFile(os.Args[3], os.O_TRUNC|os.O_CREATE|os.O_WRONLY, 0644)
 				if err != nil {
 					log.Println(err)
 					exit(2)
