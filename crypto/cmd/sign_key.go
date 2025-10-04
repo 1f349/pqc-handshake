@@ -167,7 +167,7 @@ func getDateTimeWithDurationFromString(txt string, base time.Time) (t time.Time)
 
 func usageSK(buildName, buildDate, buildVersion, buildAuthor, buildLicense string, exit func(code int)) {
 	log.Printf("%s #%s (%s) : (C) %s : %s License\n", buildName, buildVersion, buildDate, buildAuthor, buildLicense)
-	fmt.Println("\nUsage:\n" + buildName + " <private signing key path|-> <public encapsulation key path|-> <signature data path|-> [expiry datetime RFC3339|expiry duration from issue|expiry in millisecond unix epoch] [issue datetime RFC3339|issue in millisecond unix epoch]")
+	fmt.Println("\nUsage:\n" + buildName + " <private signing key path|-> <public encapsulation key path|-> <signature data path|-> [expiry datetime RFC3339(Milli)|expiry duration from issue|expiry in millisecond unix epoch] [issue datetime RFC3339(Milli)|issue in millisecond unix epoch]")
 	fmt.Println("Expiry is a duration of 168h unless specified.")
 	fmt.Println("Issue is now unless specified.")
 	fmt.Println("If both input paths are \"-\", the command will fail.")
