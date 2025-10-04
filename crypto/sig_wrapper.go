@@ -70,7 +70,7 @@ func (s SigWrapper) UnmarshalBinaryPublicKey(bytes []byte) (SigPublicKey, error)
 }
 
 func (s SigWrapper) Sign(key SigPrivateKey, msg []byte) (stxt []byte, err error) {
-	if wk, ok := key.(SigPrivateKeyWrapper); ok {
+	if wk, ok := key.(*SigPrivateKeyWrapper); ok {
 		defer func() {
 			if r := recover(); r != nil {
 				if e, ok := r.(error); ok {
@@ -86,7 +86,7 @@ func (s SigWrapper) Sign(key SigPrivateKey, msg []byte) (stxt []byte, err error)
 }
 
 func (s SigWrapper) Verify(key SigPublicKey, msg []byte, sig []byte) (v bool, err error) {
-	if wk, ok := key.(SigPublicKeyWrapper); ok {
+	if wk, ok := key.(*SigPublicKeyWrapper); ok {
 		defer func() {
 			if r := recover(); r != nil {
 				if e, ok := r.(error); ok {

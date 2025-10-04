@@ -2,16 +2,22 @@ package crypto
 
 import (
 	"bytes"
+	"errors"
 	intbyteutils "github.com/1f349/int-byte-utils"
 	"hash"
 	"io"
 	"time"
 )
 
+var KeyNil = errors.New("key is nil")
+var SigGenFailed = errors.New("signature generation failed")
+
 // GetSignedDataPayload gets the signature data payload for signing; if hash is nil, the data itself is provided rather than its hash
-func GetSignedDataPayload(publicKey []byte, issueTime, expiryTime time.Time, hash hash.Hash) (bts []byte) {
-	bts = make([]byte, 0, len(publicKey)+20)
-	buff := bytes.NewBuffer(bts)
+func GetSignedDataPayload(publicKey []byte, issueTime, expiryTime time.Time, hash hash.Hash) []byte {
+	if expiryTime.Before(issueTime) || expiryTime.Equal(issueTime) {
+		return nil
+	}
+	buff := bytes.NewBuffer(make([]byte, 0, len(publicKey)+20))
 	buff.Write(publicKey)
 	if issueTime.UnixMilli() < 0 {
 		return nil
@@ -29,19 +35,15 @@ func GetSignedDataPayload(publicKey []byte, issueTime, expiryTime time.Time, has
 	}
 	if hash != nil {
 		hash.Reset()
-		hash.Write(bts)
-		bts = hash.Sum(nil)
+		hash.Write(buff.Bytes())
+		return hash.Sum(nil)
 	}
-	return bts
+	return buff.Bytes()
 }
 
 // NewSigData creates a new SigData instance given the information for GetSignedDataPayload and the SigPrivateKey for signing
 func NewSigData(publicEKey []byte, issueTime, expiryTime time.Time, hash hash.Hash, privateKey SigPrivateKey) *SigData {
 	if expiryTime.Before(issueTime) {
-		return nil
-	}
-	pubKey, err := privateKey.Public().MarshalBinary()
-	if err != nil {
 		return nil
 	}
 	dat := GetSignedDataPayload(publicEKey, issueTime, expiryTime, hash)
@@ -53,11 +55,17 @@ func NewSigData(publicEKey []byte, issueTime, expiryTime time.Time, hash hash.Ha
 		return nil
 	}
 	return &SigData{
-		PublicKey:  pubKey,
+		PublicKey:  publicEKey,
 		Signature:  sig,
 		IssueTime:  issueTime,
 		ExpiryTime: expiryTime,
 	}
+}
+
+func UnmarshalSigData(data, publicEKey []byte) (*SigData, error) {
+	sd := &SigData{PublicKey: publicEKey}
+	err := sd.UnmarshalBinary(data)
+	return sd, err
 }
 
 // SigData provides a certificate like verification object for public keys
@@ -112,7 +120,8 @@ func (s *SigData) MarshalBinary() (data []byte, err error) {
 
 // Verify the SigData given the signed data payload hash.Hash and the SigPublicKey to check against
 func (s *SigData) Verify(hash hash.Hash, pubKey SigPublicKey) bool {
-	if s.PublicKey == nil {
+	if pubKey == nil || s.PublicKey == nil ||
+		s.IssueTime.After(time.Now()) || s.ExpiryTime.Before(time.Now()) || s.ExpiryTime.Equal(time.Now()) {
 		return false
 	}
 	d := GetSignedDataPayload(s.PublicKey, s.IssueTime, s.ExpiryTime, hash)

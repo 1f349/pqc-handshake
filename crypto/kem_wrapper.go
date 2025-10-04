@@ -57,14 +57,14 @@ func (k KemWrapper) GenerateKeyPair() (KemPublicKey, KemPrivateKey, error) {
 }
 
 func (k KemWrapper) Encapsulate(key KemPublicKey) (ctxt, secret []byte, err error) {
-	if wk, ok := key.(KemPublicKeyWrapper); ok {
+	if wk, ok := key.(*KemPublicKeyWrapper); ok {
 		return k.wrapped.Encapsulate(wk.PublicKey)
 	}
 	return nil, nil, IncompatibleKey
 }
 
 func (k KemWrapper) Decapsulate(key KemPrivateKey, ctxt []byte) ([]byte, error) {
-	if wk, ok := key.(KemPrivateKeyWrapper); ok {
+	if wk, ok := key.(*KemPrivateKeyWrapper); ok {
 		return k.wrapped.Decapsulate(wk.PrivateKey, ctxt)
 	}
 	return nil, IncompatibleKey
