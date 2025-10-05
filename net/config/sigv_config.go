@@ -13,8 +13,6 @@ type SigVerifierConfig struct {
 	PublicKeyData []byte
 	publicKeyHash []byte
 	publicKey     crypto.SigPublicKey
-	// LastError is the cause of the last failure of PublicKey generation
-	LastError error
 }
 
 // PublicKeyHash generates from public key data
@@ -34,7 +32,6 @@ func (svc *SigVerifierConfig) PublicKey() crypto.SigPublicKey {
 		var err error
 		svc.publicKey, err = svc.Scheme.UnmarshalBinaryPublicKey(svc.PublicKeyData)
 		if err != nil {
-			svc.LastError = err
 			return nil
 		}
 	}
