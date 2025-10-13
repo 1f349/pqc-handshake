@@ -3,6 +3,7 @@
 Provides a protocol and net implementation to use post quantum cryptographic functions to prove ownership of keys and share a session key.
 The architecture of the library allows for the use of the use of any compatible algorithms for key encapsulation, HMAC, hashing and signing.
 This can even include providing a capabilities packet for negotiating those aforementioned algorithms (Hence ID 0 has been reserved for this).
+Any ID 0 packets will be incompatible with the current implementation as payload length is not explicitly stored.
 
 Proving key ownership is as simple as sending the encapsulated symmetric key to the other node, 
 with a HMAC of the previous packet bytes 
@@ -40,7 +41,7 @@ Time is considered in milliseconds from the unix epoch.
 
 Where the highest bit of type denotes a fragmented packet when set and adds the following to the header:
 
-[Fragment N.o. {1 Byte}] [Fragment Count {1 Byte}]
+[Fragment N.o. {1 Byte}] [Fragment Count {1 Byte}] [Fragment Length {2 Byte}]
 
 All other internal fields,, that are byte arrays, 
 are headed with an unsigned integer represented using the 
@@ -53,9 +54,6 @@ if only an unsigned integer is represented, this is denoted as (Field).
 #### 0) Reserved for future use
 
 Could be used by the user for negotiation of algorithms to be used.
-
-If a responder receives this before a (2) has been received, 
-send back an empty packet with this ID.
 
 #### 1) Connection Rejected
 
