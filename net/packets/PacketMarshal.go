@@ -91,6 +91,9 @@ func (p *PacketMarshaller) Marshal(packetHeader PacketHeader, payload PacketPayl
 			if err != nil {
 				return err
 			}
+			if sz == 0 { // Dummy write if zero payload to force packetFragmentWriter init
+				_, _ = pw.Write(nil)
+			}
 			err = pw.Flush()
 			if err != nil {
 				return err
