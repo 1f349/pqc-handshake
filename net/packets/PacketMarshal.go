@@ -7,16 +7,15 @@ import (
 	"sync"
 )
 
+var FragmentReceived = errors.New("fragment received")
 var InvalidPacketID = errors.New("invalid packet id")
 var FragmentIndexOutOfRange = errors.New("fragment index out of range")
-var MTUTooSmall = errors.New("MTU too small")
-var TooMuchData = errors.New("too much data")
-var NoPacketToFlush = errors.New("no packet to flush")
 
 type PacketPayload interface {
 	io.WriterTo
 	io.ReaderFrom
 	Size() uint
+	//TODO: Add hmac calculation (Via return a valid instance) and hmac receiver for support in marshal only
 }
 
 type PacketMarshaller struct {
@@ -33,7 +32,7 @@ func (p *PacketMarshaller) Unmarshal() (packetHeader *PacketHeader, packetPayloa
 	var localConn io.ReadWriter
 	if p.MTU > 0 {
 		packetData := make([]byte, p.MTU)
-		_, err = io.ReadFull(p.Conn, packetData)
+		_, err = p.Conn.Read(packetData)
 		if err != nil {
 			return packetHeader, nil, err
 		}
@@ -124,7 +123,7 @@ func (p *PacketMarshaller) processFragment(f []byte, header PacketHeader) (*Pack
 	buff := new(bytes.Buffer)
 	for _, f := range p.fragments {
 		if f == nil {
-			return &header, nil, nil
+			return &header, nil, FragmentReceived
 		} else {
 			buff.Write(f)
 		}

@@ -2,10 +2,15 @@ package packets
 
 import (
 	"crypto/rand"
+	"errors"
 	intbyteutils "github.com/1f349/int-byte-utils"
 	"io"
 	"time"
 )
+
+var MTUTooSmall = errors.New("MTU too small")
+var TooMuchData = errors.New("too much data")
+var NoPacketToFlush = errors.New("no packet to flush")
 
 type packetFragmentWriter struct {
 	target        io.Writer
@@ -39,8 +44,7 @@ func (pw *packetFragmentWriter) Write(p []byte) (n int, err error) {
 	pIdx := uint(0)
 	for pIdx < uint(len(p)) {
 		eCount := min(uint(len(p))-pIdx, uint(len(pw.data))-pw.index)
-		copy(pw.data[pw.index:pw.index+eCount], p[pIdx:pIdx+eCount])
-		n += int(eCount)
+		n += copy(pw.data[pw.index:pw.index+eCount], p[pIdx:pIdx+eCount])
 		pIdx += eCount
 		pw.index += eCount
 		if pw.index == uint(len(pw.data)) {

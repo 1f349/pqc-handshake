@@ -14,11 +14,13 @@ type EmptyPayload struct {
 }
 
 func (e *EmptyPayload) WriteTo(w io.Writer) (n int64, err error) {
-	return 0, nil
+	m, err := w.Write(nil)
+	return int64(m), err
 }
 
 func (e *EmptyPayload) ReadFrom(r io.Reader) (n int64, err error) {
-	return 0, nil
+	m, err := r.Read(nil)
+	return int64(m), err
 }
 
 func (e *EmptyPayload) Size() uint {
