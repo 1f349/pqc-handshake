@@ -63,8 +63,10 @@ func (p *PacketMarshaller) unmarshal(header PacketHeader, conn io.Reader) (*Pack
 		pyld = &EmptyPayload{}
 	case PublicKeyDataPacketType:
 		pyld = &PublicKeyPayload{}
-	case SignedPacketPublicKeyPacketType:
-		pyld = &SignedPacketPublicKeyPayload{}
+	case SignedPacketSigPublicKeyPacketType:
+		pyld = &SignedPacketSigPublicKeyPayload{}
+	case PublicKeySignedPacketType:
+		pyld = &PublicKeySignedPacketPayload{}
 	default:
 		return header.Clone(), nil, InvalidPacketID
 	}

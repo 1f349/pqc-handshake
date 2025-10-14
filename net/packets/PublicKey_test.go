@@ -8,27 +8,27 @@ import (
 	"testing"
 )
 
-var validPublicKeyPayload = &PublicKeyPayload{}
-var invalidPublicKeyPayload = &PublicKeyPayload{}
+var validPublicKeyPayload *PublicKeyPayload = nil
+var invalidPublicKeyPayload *PublicKeyPayload = nil
 
 func GetValidPublicKeyPayload() *PublicKeyPayload {
 	if validPublicKeyPayload == nil {
-		return validPublicKeyPayload
-	}
-	scheme := crypto.WrapKem(mlkem768.Scheme())
-	k, _, err := scheme.GenerateKeyPair()
-	if err != nil {
-		panic(err)
-	}
-	err = validPublicKeyPayload.Save(k)
-	if err != nil {
-		panic(err)
+		validPublicKeyPayload = &PublicKeyPayload{}
+		scheme := crypto.WrapKem(mlkem768.Scheme())
+		k, _, err := scheme.GenerateKeyPair()
+		if err != nil {
+			panic(err)
+		}
+		err = validPublicKeyPayload.Save(k)
+		if err != nil {
+			panic(err)
+		}
 	}
 	return validPublicKeyPayload
 }
 
 func GetInvalidPublicKeyPayload() *PublicKeyPayload {
-	if invalidPublicKeyPayload == nil {
+	if invalidPublicKeyPayload != nil {
 		return invalidPublicKeyPayload
 	}
 	invalidPublicKeyPayload = &PublicKeyPayload{Data: []byte{0, 1, 2, 3}}

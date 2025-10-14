@@ -2,6 +2,7 @@ package packets
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"errors"
 	"github.com/1f349/pqc-handshake/crypto"
 	"github.com/cloudflare/circl/kem/mlkem/mlkem768"
@@ -51,23 +52,40 @@ func sharedPacketMarshalTest(t *testing.T, transport io.ReadWriter, mtu uint) {
 		}
 		return false
 	})
-	testOnePayload(t, marshal, PacketHeader{ID: SignedPacketPublicKeyPacketType, ConnectionUUID: connection, Time: pt}, GetValidSignedPacketPublicKeyPayload(), func(o PacketPayload, r PacketPayload) bool {
-		k, err := r.(*SignedPacketPublicKeyPayload).Load(crypto.WrapSig(mldsa44.Scheme()))
+	testOnePayload(t, marshal, PacketHeader{ID: SignedPacketSigPublicKeyPacketType, ConnectionUUID: connection, Time: pt}, GetValidSignedPacketSigPublicKeyPayload(), func(o PacketPayload, r PacketPayload) bool {
+		k, err := r.(*SignedPacketSigPublicKeyPayload).Load(crypto.WrapSig(mldsa44.Scheme()))
 		if err != nil || k == nil {
 			return false
 		}
-		ko, err := o.(*SignedPacketPublicKeyPayload).Load(nil)
+		ko, err := o.(*SignedPacketSigPublicKeyPayload).Load(nil)
 		if err != nil || ko == nil {
 			return false
 		}
 		return ko.Equals(k)
 	})
-	testOnePayload(t, marshal, PacketHeader{ID: SignedPacketPublicKeyPacketType, ConnectionUUID: connection, Time: pt}, GetInvalidSignedPacketPublicKeyPayload(), func(o PacketPayload, r PacketPayload) bool {
-		k, err := r.(*SignedPacketPublicKeyPayload).Load(crypto.WrapSig(mldsa44.Scheme()))
+	testOnePayload(t, marshal, PacketHeader{ID: SignedPacketSigPublicKeyPacketType, ConnectionUUID: connection, Time: pt}, GetInvalidSignedPacketSigPublicKeyPayload(), func(o PacketPayload, r PacketPayload) bool {
+		k, err := r.(*SignedPacketSigPublicKeyPayload).Load(crypto.WrapSig(mldsa44.Scheme()))
 		if err != nil && k == nil {
 			return true
 		}
 		return false
+	})
+	testOnePayload(t, marshal, PacketHeader{ID: PublicKeySignedPacketType, ConnectionUUID: connection, Time: pt}, GetValidPublicKeySignedPacketPayload(), func(o PacketPayload, r PacketPayload) bool {
+		if !slices.Equal(validPublicKeySignedPacketPayloadSigPubKeyHash, r.(*PublicKeySignedPacketPayload).SigPubKeyHash) {
+			return false
+		}
+		sigData, err := r.(*PublicKeySignedPacketPayload).Load(validPublicKeySignedPacketPayloadKemPubKey)
+		if err != nil || sigData.Signature == nil {
+			return false
+		}
+		return sigData.Verify(sha256.New(), validPublicKeySignedPacketPayloadSigPubKey)
+	})
+	testOnePayload(t, marshal, PacketHeader{ID: PublicKeySignedPacketType, ConnectionUUID: connection, Time: pt}, GetInvalidPublicKeySignedPacketPayload(), func(o PacketPayload, r PacketPayload) bool {
+		if !slices.Equal([]byte{0, 1, 2, 3}, r.(*PublicKeySignedPacketPayload).SigPubKeyHash) {
+			return false
+		}
+		sigData, err := r.(*PublicKeySignedPacketPayload).Load(validPublicKeySignedPacketPayloadKemPubKey)
+		return err != nil && sigData.Signature == nil
 	})
 }
 

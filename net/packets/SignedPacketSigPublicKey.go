@@ -6,29 +6,29 @@ import (
 	"io"
 )
 
-const SignedPacketPublicKeyPacketType = PacketType(10)
+const SignedPacketSigPublicKeyPacketType = PacketType(10)
 
-type SignedPacketPublicKeyPayload struct {
+type SignedPacketSigPublicKeyPayload struct {
 	Data []byte
 	key  crypto.SigPublicKey
 }
 
-func (p *SignedPacketPublicKeyPayload) WriteTo(w io.Writer) (n int64, err error) {
+func (p *SignedPacketSigPublicKeyPayload) WriteTo(w io.Writer) (n int64, err error) {
 	m, err := writeBuff(w, p.Data)
 	return int64(m), err
 }
 
-func (p *SignedPacketPublicKeyPayload) ReadFrom(r io.Reader) (n int64, err error) {
+func (p *SignedPacketSigPublicKeyPayload) ReadFrom(r io.Reader) (n int64, err error) {
 	var m int
 	m, err, p.Data = readBuff(r)
 	return int64(m), err
 }
 
-func (p *SignedPacketPublicKeyPayload) Size() uint {
+func (p *SignedPacketSigPublicKeyPayload) Size() uint {
 	return uint(intbyteutils.LenUintAsBytes(uint(len(p.Data))) + len(p.Data))
 }
 
-func (p *SignedPacketPublicKeyPayload) Load(scheme crypto.SigScheme) (crypto.SigPublicKey, error) {
+func (p *SignedPacketSigPublicKeyPayload) Load(scheme crypto.SigScheme) (crypto.SigPublicKey, error) {
 	if p.key != nil {
 		return p.key, nil
 	}
@@ -37,7 +37,7 @@ func (p *SignedPacketPublicKeyPayload) Load(scheme crypto.SigScheme) (crypto.Sig
 	return p.key, err
 }
 
-func (p *SignedPacketPublicKeyPayload) Save(key crypto.SigPublicKey) error {
+func (p *SignedPacketSigPublicKeyPayload) Save(key crypto.SigPublicKey) error {
 	if key == nil {
 		return crypto.KeyNil
 	}
