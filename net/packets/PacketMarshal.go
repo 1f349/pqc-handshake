@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"math"
 	"sync"
 )
 
 var FragmentReceived = errors.New("fragment received")
 var InvalidPacketID = errors.New("invalid packet id")
 var FragmentIndexOutOfRange = errors.New("fragment index out of range")
+var TooManyFragments = errors.New("too many fragments")
 
 type PacketPayload interface {
 	io.WriterTo
@@ -90,6 +92,9 @@ func (p *PacketMarshaller) Marshal(packetHeader PacketHeader, payload PacketPayl
 				fc := sz / (p.MTU - HeaderSizeForFragmentation)
 				if sz%(p.MTU-HeaderSizeForFragmentation) > 0 {
 					fc++
+				}
+				if fc > math.MaxUint8 {
+					return TooManyFragments
 				}
 				pw = &packetFragmentWriter{target: p.Conn, header: *packetHeader.CloneAsFragment(0, byte(fc), uint16(p.MTU-HeaderSizeForFragmentation)), mtu: p.MTU, fragmentWrite: true}
 			}

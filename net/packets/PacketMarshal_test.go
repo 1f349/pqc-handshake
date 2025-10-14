@@ -23,6 +23,12 @@ func TestPacketMarshalFragmented(t *testing.T) {
 	sharedPacketMarshalTest(t, newMTUTransport(MTU), MTU)
 }
 
+func TestPacketMarshalFragmentedSmallMTU(t *testing.T) {
+	//const MTU = HeaderSizeForFragmentation + 1 //Not, this may be the minimum valid, but the maximum number of fragments is 255
+	const MTU = 64
+	sharedPacketMarshalTest(t, newMTUTransport(MTU), MTU)
+}
+
 func sharedPacketMarshalTest(t *testing.T, transport io.ReadWriter, mtu uint) {
 	marshal := &PacketMarshaller{
 		Conn: transport,

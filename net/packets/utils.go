@@ -78,20 +78,25 @@ func (pw *packetFragmentWriter) Flush() error {
 	if len(pw.data) == 0 {
 		return NoPacketToFlush
 	}
-	pw.header.fragmentSize = uint16(pw.index - HeaderSizeForFragmentation)
-	lN, err := pw.header.WriteTo(&overwriter{buff: pw.data})
-	if err != nil {
-		return err
+	var n int
+	var err error
+	if (pw.fragmentWrite && pw.index > HeaderSizeForFragmentation) || !pw.fragmentWrite {
+		pw.header.fragmentSize = uint16(pw.index - HeaderSizeForFragmentation)
+		var lN int64
+		lN, err = pw.header.WriteTo(&overwriter{buff: pw.data})
+		if err != nil {
+			return err
+		}
+		if (pw.fragmentWrite && lN != HeaderSizeForFragmentation) || (!pw.fragmentWrite && lN != HeaderSize) {
+			return io.EOF
+		}
+		n, err = pw.target.Write(pw.data[:pw.index])
 	}
-	if (pw.fragmentWrite && lN != HeaderSizeForFragmentation) || (!pw.fragmentWrite && lN != HeaderSize) {
-		return io.EOF
-	}
-	n, err := pw.target.Write(pw.data[:pw.index])
 	defer func() {
 		pw.index = 0
 		pw.data = nil
 	}()
-	if n < 0 || uint(n) != pw.index {
+	if n < 0 || (uint(n) != pw.index && ((pw.fragmentWrite && pw.index > HeaderSizeForFragmentation) || !pw.fragmentWrite)) {
 		return io.ErrShortWrite
 	}
 	if err != nil {
