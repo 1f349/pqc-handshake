@@ -125,6 +125,9 @@ func (k SigPublicKeyWrapper) Scheme() SigScheme {
 }
 
 func (k SigPublicKeyWrapper) Equals(key SigPublicKey) bool {
+	if wk, ok := key.(*SigPublicKeyWrapper); ok {
+		return k.PublicKey.Equal(wk.PublicKey)
+	}
 	if wk, ok := key.(SigPublicKeyWrapper); ok {
 		return k.PublicKey.Equal(wk.PublicKey)
 	}
@@ -141,6 +144,9 @@ func (k SigPrivateKeyWrapper) Scheme() SigScheme {
 }
 
 func (k SigPrivateKeyWrapper) Equals(key SigPrivateKey) bool {
+	if wk, ok := key.(*SigPrivateKeyWrapper); ok {
+		return k.PrivateKey.Equal(wk.PrivateKey)
+	}
 	if wk, ok := key.(SigPrivateKeyWrapper); ok {
 		return k.PrivateKey.Equal(wk.PrivateKey)
 	}

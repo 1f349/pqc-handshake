@@ -114,6 +114,9 @@ func (k KemPublicKeyWrapper) Scheme() KemScheme {
 }
 
 func (k KemPublicKeyWrapper) Equals(key KemPublicKey) bool {
+	if wk, ok := key.(*KemPublicKeyWrapper); ok {
+		return k.PublicKey.Equal(wk.PublicKey)
+	}
 	if wk, ok := key.(KemPublicKeyWrapper); ok {
 		return k.PublicKey.Equal(wk.PublicKey)
 	}
@@ -130,6 +133,9 @@ func (k KemPrivateKeyWrapper) Scheme() KemScheme {
 }
 
 func (k KemPrivateKeyWrapper) Equals(key KemPrivateKey) bool {
+	if wk, ok := key.(*KemPrivateKeyWrapper); ok {
+		return k.PrivateKey.Equal(wk.PrivateKey)
+	}
 	if wk, ok := key.(KemPrivateKeyWrapper); ok {
 		return k.PrivateKey.Equal(wk.PrivateKey)
 	}

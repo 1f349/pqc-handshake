@@ -18,7 +18,7 @@ func TestEmptyWriteRead(t *testing.T) {
 	assert.Equal(t, payload.Size(), uint(n))
 	assert.Equal(t, uint(0), payload.Size())
 	rPayload := &EmptyPayload{}
-	n, err = rPayload.WriteTo(buff)
+	n, err = rPayload.ReadFrom(buff)
 	assert.NoError(t, err)
 	assert.Equal(t, int64(0), n)
 }

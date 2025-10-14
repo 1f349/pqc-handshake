@@ -3,6 +3,9 @@ package packets
 import (
 	"bytes"
 	"errors"
+	"github.com/1f349/pqc-handshake/crypto"
+	"github.com/cloudflare/circl/kem/mlkem/mlkem768"
+	"github.com/cloudflare/circl/sign/mldsa/mldsa44"
 	"github.com/stretchr/testify/assert"
 	"io"
 	"slices"
@@ -26,19 +29,55 @@ func sharedPacketMarshalTest(t *testing.T, transport io.ReadWriter, mtu uint) {
 	}
 	connection := GetUUID()
 	pt := MilliTime(time.Now())
-	testOnePayload(t, marshal, PacketHeader{ID: ConnectionRejectedPacketType, ConnectionUUID: connection, Time: pt}, ValidEmptyPayload, true)
-	testOnePayload(t, marshal, PacketHeader{ID: PublicKeyRequestPacketType, ConnectionUUID: connection, Time: pt}, ValidEmptyPayload, true)
-	testOnePayload(t, marshal, PacketHeader{ID: SignatureRequestPacketType, ConnectionUUID: connection, Time: pt}, ValidEmptyPayload, true)
-	testOnePayload(t, marshal, PacketHeader{ID: SignaturePublicKeyRequestPacketType, ConnectionUUID: connection, Time: pt}, ValidEmptyPayload, true)
+	testOnePayload(t, marshal, PacketHeader{ID: ConnectionRejectedPacketType, ConnectionUUID: connection, Time: pt}, ValidEmptyPayload, emptyPayloadChecker)
+	testOnePayload(t, marshal, PacketHeader{ID: PublicKeyRequestPacketType, ConnectionUUID: connection, Time: pt}, ValidEmptyPayload, emptyPayloadChecker)
+	testOnePayload(t, marshal, PacketHeader{ID: SignatureRequestPacketType, ConnectionUUID: connection, Time: pt}, ValidEmptyPayload, emptyPayloadChecker)
+	testOnePayload(t, marshal, PacketHeader{ID: SignaturePublicKeyRequestPacketType, ConnectionUUID: connection, Time: pt}, ValidEmptyPayload, emptyPayloadChecker)
+	testOnePayload(t, marshal, PacketHeader{ID: PublicKeyDataPacketType, ConnectionUUID: connection, Time: pt}, GetValidPublicKeyPayload(), func(o PacketPayload, r PacketPayload) bool {
+		k, err := r.(*PublicKeyPayload).Load(crypto.WrapKem(mlkem768.Scheme()))
+		if err != nil || k == nil {
+			return false
+		}
+		ko, err := o.(*PublicKeyPayload).Load(nil)
+		if err != nil || ko == nil {
+			return false
+		}
+		return ko.Equals(k)
+	})
+	testOnePayload(t, marshal, PacketHeader{ID: PublicKeyDataPacketType, ConnectionUUID: connection, Time: pt}, GetInvalidPublicKeyPayload(), func(o PacketPayload, r PacketPayload) bool {
+		k, err := r.(*PublicKeyPayload).Load(crypto.WrapKem(mlkem768.Scheme()))
+		if err != nil && k == nil {
+			return true
+		}
+		return false
+	})
+	testOnePayload(t, marshal, PacketHeader{ID: SignedPacketPublicKeyPacketType, ConnectionUUID: connection, Time: pt}, GetValidSignedPacketPublicKeyPayload(), func(o PacketPayload, r PacketPayload) bool {
+		k, err := r.(*SignedPacketPublicKeyPayload).Load(crypto.WrapSig(mldsa44.Scheme()))
+		if err != nil || k == nil {
+			return false
+		}
+		ko, err := o.(*SignedPacketPublicKeyPayload).Load(nil)
+		if err != nil || ko == nil {
+			return false
+		}
+		return ko.Equals(k)
+	})
+	testOnePayload(t, marshal, PacketHeader{ID: SignedPacketPublicKeyPacketType, ConnectionUUID: connection, Time: pt}, GetInvalidSignedPacketPublicKeyPayload(), func(o PacketPayload, r PacketPayload) bool {
+		k, err := r.(*SignedPacketPublicKeyPayload).Load(crypto.WrapSig(mldsa44.Scheme()))
+		if err != nil && k == nil {
+			return true
+		}
+		return false
+	})
 }
 
-func testOnePayload(t *testing.T, marshal *PacketMarshaller, header PacketHeader, payload PacketPayload, succeed bool) {
+func emptyPayloadChecker(o PacketPayload, r PacketPayload) bool {
+	return true
+}
+
+func testOnePayload(t *testing.T, marshal *PacketMarshaller, header PacketHeader, payload PacketPayload, payloadChecker func(o PacketPayload, r PacketPayload) bool) {
 	err := marshal.Marshal(header, payload)
-	if succeed {
-		assert.NoError(t, err)
-	} else {
-		assert.Error(t, err)
-	}
+	assert.NoError(t, err)
 	var rHeader *PacketHeader
 	var rPayload PacketPayload
 	err = FragmentReceived
@@ -46,18 +85,14 @@ func testOnePayload(t *testing.T, marshal *PacketMarshaller, header PacketHeader
 		rHeader, rPayload, err = marshal.Unmarshal()
 	}
 	assert.NotNil(t, rHeader)
-	if succeed {
-		assert.NoError(t, err)
-		assert.NotNil(t, rPayload)
-		if rHeader != nil {
-			assert.True(t, header.Equals(*rHeader))
-		}
-		if rPayload != nil {
-			assert.Equal(t, payload.Size(), rPayload.Size())
-		}
-	} else {
-		assert.Error(t, err)
-		assert.Nil(t, rPayload)
+	assert.NoError(t, err)
+	assert.NotNil(t, rPayload)
+	if rHeader != nil {
+		assert.True(t, header.Equals(*rHeader))
+	}
+	if rPayload != nil {
+		assert.Equal(t, payload.Size(), rPayload.Size())
+		assert.True(t, payloadChecker(payload, rPayload))
 	}
 
 }

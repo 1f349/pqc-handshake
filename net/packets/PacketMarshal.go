@@ -33,7 +33,7 @@ func (p *PacketMarshaller) Unmarshal() (packetHeader *PacketHeader, packetPayloa
 	if p.MTU > 0 {
 		packetData := make([]byte, p.MTU)
 		_, err = p.Conn.Read(packetData)
-		if err != nil {
+		if err != nil && err != io.EOF {
 			return packetHeader, nil, err
 		}
 		localConn = bytes.NewBuffer(packetData)
@@ -61,6 +61,10 @@ func (p *PacketMarshaller) unmarshal(header PacketHeader, conn io.Reader) (*Pack
 	switch header.ID {
 	case ConnectionRejectedPacketType, PublicKeyRequestPacketType, SignatureRequestPacketType, SignaturePublicKeyRequestPacketType:
 		pyld = &EmptyPayload{}
+	case PublicKeyDataPacketType:
+		pyld = &PublicKeyPayload{}
+	case SignedPacketPublicKeyPacketType:
+		pyld = &SignedPacketPublicKeyPayload{}
 	default:
 		return header.Clone(), nil, InvalidPacketID
 	}
@@ -115,7 +119,7 @@ func (p *PacketMarshaller) Marshal(packetHeader PacketHeader, payload PacketPayl
 func (p *PacketMarshaller) processFragment(f []byte, header PacketHeader) (*PacketHeader, PacketPayload, error) {
 	p.fragmentMutex.Lock()
 	defer p.fragmentMutex.Unlock()
-	if len(p.fragments) != int(header.fragmentCount) || header.Equals(p.fragmentedPacketHeader) {
+	if len(p.fragments) != int(header.fragmentCount) || !header.Equals(p.fragmentedPacketHeader) {
 		p.fragments = make([][]byte, header.fragmentCount)
 		p.fragmentedPacketHeader.Set(header)
 	}
