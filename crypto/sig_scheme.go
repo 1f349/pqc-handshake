@@ -28,8 +28,8 @@ type SigScheme interface {
 	// Name of the scheme
 	Name() string
 
-	// GenerateKey generates a new key pair
-	GenerateKey() (SigPublicKey, SigPrivateKey, error)
+	// GenerateKeyPair generates a new key pair
+	GenerateKeyPair() (SigPublicKey, SigPrivateKey, error)
 
 	// UnmarshalBinaryPrivateKey gets a SigPrivateKey given its binary representation
 	UnmarshalBinaryPrivateKey([]byte) (SigPrivateKey, error)

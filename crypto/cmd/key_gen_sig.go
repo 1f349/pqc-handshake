@@ -34,7 +34,7 @@ func mainKegGenSig(scheme crypto.SigScheme, buildName, buildDate, buildVersion, 
 				}
 			}
 			defer func() { _ = f.Close() }()
-			_, k, err := scheme.GenerateKey()
+			_, k, err := scheme.GenerateKeyPair()
 			if err != nil {
 				log.Println(err)
 				exit(3)

@@ -20,7 +20,7 @@ func TestSigData(t *testing.T) {
 	skb, err := sk.MarshalBinary()
 	assert.NoError(t, err)
 	scheme := WrapSig(mldsa44.Scheme())
-	pk, k, err := scheme.GenerateKey()
+	pk, k, err := scheme.GenerateKeyPair()
 	assert.NoError(t, err)
 	sigs := make([][]byte, 0, 9)
 	sigs = append(sigs, []byte{})                                                                                           // Empty Data

@@ -47,7 +47,7 @@ func (s SigWrapper) Name() string {
 	return s.wrapped.Name()
 }
 
-func (s SigWrapper) GenerateKey() (SigPublicKey, SigPrivateKey, error) {
+func (s SigWrapper) GenerateKeyPair() (SigPublicKey, SigPrivateKey, error) {
 	p, q, err := s.wrapped.GenerateKey()
 	if err != nil {
 		return nil, nil, err

@@ -24,7 +24,7 @@ func TestMainSignKey(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, os.WriteFile(dir+"/epubkey", ekpBts, 0644))
 	sigScheme := crypto.WrapSig(mldsa44.Scheme())
-	kp, k, err := sigScheme.GenerateKey()
+	kp, k, err := sigScheme.GenerateKeyPair()
 	assert.NoError(t, err)
 	kBts, err := k.MarshalBinary()
 	assert.NoError(t, err)

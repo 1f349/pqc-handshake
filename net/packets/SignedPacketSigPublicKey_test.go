@@ -17,7 +17,7 @@ func GetValidSignedPacketSigPublicKeyPayload() *SignedPacketSigPublicKeyPayload 
 	if validSignedPacketSigPublicKeyPayload == nil {
 		validSignedPacketSigPublicKeyPayload = &SignedPacketSigPublicKeyPayload{}
 		scheme := crypto.WrapSig(mldsa44.Scheme())
-		k, _, err := scheme.GenerateKey()
+		k, _, err := scheme.GenerateKeyPair()
 		if err != nil {
 			panic(err)
 		}

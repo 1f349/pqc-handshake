@@ -35,7 +35,7 @@ func GetValidPublicKeySignedPacketPayload() *PublicKeySignedPacketPayload {
 		}
 		sigScheme := crypto.WrapSig(mldsa44.Scheme())
 		var pk crypto.SigPrivateKey
-		validPublicKeySignedPacketPayloadSigPubKey, pk, err = sigScheme.GenerateKey()
+		validPublicKeySignedPacketPayloadSigPubKey, pk, err = sigScheme.GenerateKeyPair()
 		if err != nil {
 			panic(err)
 		}
