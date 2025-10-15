@@ -15,7 +15,7 @@ type PacketType byte
 const HeaderSize = 1 + 16 + 8
 const HeaderSizeForFragmentation = HeaderSize + 1 + 1 + 2
 
-var TimeOutOfRange = errors.New("time out of range")
+var ErrTimeOutOfRange = errors.New("time out of range")
 
 type PacketHeader struct {
 	ID             PacketType
@@ -39,7 +39,7 @@ func (h *PacketHeader) WriteTo(w io.Writer) (n int64, err error) {
 	}
 	bts := make([]byte, 8)
 	if h.Time.UnixMilli() < 0 {
-		return n, TimeOutOfRange
+		return n, ErrTimeOutOfRange
 	}
 	binary.LittleEndian.PutUint64(bts, uint64(h.Time.UnixMilli()))
 	m, err = w.Write(bts)
@@ -85,7 +85,7 @@ func (h *PacketHeader) ReadFrom(r io.Reader) (n int64, err error) {
 	}
 	tms := binary.LittleEndian.Uint64(bts)
 	if tms > math.MaxInt64 {
-		return n, TimeOutOfRange
+		return n, ErrTimeOutOfRange
 	}
 	h.Time = time.UnixMilli(int64(tms))
 	if h.IsFragment() {

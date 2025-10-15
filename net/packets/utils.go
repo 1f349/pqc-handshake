@@ -10,9 +10,9 @@ import (
 	"time"
 )
 
-var MTUTooSmall = errors.New("MTU too small")
-var TooMuchData = errors.New("too much data")
-var NoPacketToFlush = errors.New("no packet to flush")
+var ErrMTUTooSmall = errors.New("MTU too small")
+var ErrTooMuchData = errors.New("too much data")
+var ErrNoPacketToFlush = errors.New("no packet to flush")
 
 type packetFragmentWriter struct {
 	target        io.Writer
@@ -27,14 +27,14 @@ func (pw *packetFragmentWriter) Write(p []byte) (n int, err error) {
 	if len(pw.data) == 0 {
 		if pw.fragmentWrite {
 			if HeaderSizeForFragmentation >= pw.mtu {
-				return 0, MTUTooSmall
+				return 0, ErrMTUTooSmall
 			} else {
 				pw.header.fragmentSize = uint16(pw.mtu - HeaderSizeForFragmentation)
 				pw.index = HeaderSizeForFragmentation
 			}
 		} else {
 			if HeaderSize >= pw.mtu {
-				return 0, MTUTooSmall
+				return 0, ErrMTUTooSmall
 			} else {
 				pw.header.fragmentSize = uint16(pw.mtu - HeaderSize)
 				pw.index = HeaderSize
@@ -65,7 +65,7 @@ func (pw *packetFragmentWriter) Write(p []byte) (n int, err error) {
 				pw.index = HeaderSizeForFragmentation
 			} else {
 				if pIdx != uint(len(p)) {
-					err = TooMuchData
+					err = ErrTooMuchData
 					return
 				} else {
 					err = pw.Flush()
@@ -78,7 +78,7 @@ func (pw *packetFragmentWriter) Write(p []byte) (n int, err error) {
 
 func (pw *packetFragmentWriter) Flush() error {
 	if len(pw.data) == 0 {
-		return NoPacketToFlush
+		return ErrNoPacketToFlush
 	}
 	var n int
 	var err error
@@ -114,7 +114,7 @@ type overwriter struct {
 
 func (o *overwriter) Write(p []byte) (n int, err error) {
 	if o.index+len(p) > len(o.buff) {
-		return copy(o.buff[o.index:], p), TooMuchData
+		return copy(o.buff[o.index:], p), ErrTooMuchData
 	}
 	o.index += copy(o.buff[o.index:o.index+len(p)], p)
 	return len(p), nil

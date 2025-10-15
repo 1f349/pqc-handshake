@@ -10,10 +10,10 @@ import (
 	"sync"
 )
 
-var FragmentReceived = errors.New("fragment received")
-var InvalidPacketID = errors.New("invalid packet id")
-var FragmentIndexOutOfRange = errors.New("fragment index out of range")
-var TooManyFragments = errors.New("too many fragments")
+var ErrFragmentReceived = errors.New("fragment received")
+var ErrInvalidPacketID = errors.New("invalid packet id")
+var ErrFragmentIndexOutOfRange = errors.New("fragment index out of range")
+var ErrTooManyFragments = errors.New("too many fragments")
 
 type PacketPayload interface {
 	io.WriterTo
@@ -72,7 +72,7 @@ func (p *PacketMarshaller) unmarshal(header PacketHeader, conn io.Reader) (*Pack
 	case PublicKeySignedPacketType:
 		pyld = &PublicKeySignedPacketPayload{}
 	default:
-		return header.Clone(), nil, InvalidPacketID
+		return header.Clone(), nil, ErrInvalidPacketID
 	}
 	_, err := pyld.ReadFrom(conn)
 	if err != nil {
@@ -84,7 +84,7 @@ func (p *PacketMarshaller) unmarshal(header PacketHeader, conn io.Reader) (*Pack
 func (p *PacketMarshaller) Marshal(packetHeader PacketHeader, payload PacketPayload) error {
 	if p.MTU > 0 {
 		if HeaderSizeForFragmentation >= p.MTU {
-			return MTUTooSmall
+			return ErrMTUTooSmall
 		} else {
 			sz := payload.Size()
 			var pw *packetFragmentWriter
@@ -96,7 +96,7 @@ func (p *PacketMarshaller) Marshal(packetHeader PacketHeader, payload PacketPayl
 					fc++
 				}
 				if fc > math.MaxUint8 {
-					return TooManyFragments
+					return ErrTooManyFragments
 				}
 				pw = &packetFragmentWriter{target: p.Conn, header: *packetHeader.CloneAsFragment(0, byte(fc), uint16(p.MTU-HeaderSizeForFragmentation)), mtu: p.MTU, fragmentWrite: true}
 			}
@@ -133,13 +133,13 @@ func (p *PacketMarshaller) processFragment(f []byte, header PacketHeader) (*Pack
 		p.fragmentedPacketHeader.Set(header)
 	}
 	if int(header.fragmentIndex) >= len(p.fragments) {
-		return &header, nil, FragmentIndexOutOfRange
+		return &header, nil, ErrFragmentIndexOutOfRange
 	}
 	p.fragments[header.fragmentIndex] = f
 	buff := new(bytes.Buffer)
 	for _, f := range p.fragments {
 		if f == nil {
-			return &header, nil, FragmentReceived
+			return &header, nil, ErrFragmentReceived
 		} else {
 			buff.Write(f)
 		}

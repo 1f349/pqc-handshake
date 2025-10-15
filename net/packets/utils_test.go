@@ -21,7 +21,7 @@ func TestOverwriter(t *testing.T) {
 	ovwr.index = 0
 	n, err = ovwr.Write([]byte{1, 2, 3})
 	assert.Error(t, err)
-	assert.Equal(t, TooMuchData, err)
+	assert.Equal(t, ErrTooMuchData, err)
 	assert.Equal(t, 2, n)
 	assert.Equal(t, byte(1), ovwr.buff[0])
 	assert.Equal(t, byte(2), ovwr.buff[1])

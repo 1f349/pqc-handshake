@@ -8,7 +8,7 @@ import (
 	"sync"
 )
 
-var IncompatibleKey = errors.New("incompatible key")
+var ErrIncompatibleKey = errors.New("incompatible key")
 
 var kemWrappedMap = make(map[kem.Scheme]*KemWrapper)
 var slockKemWrappedMap = &sync.RWMutex{}
@@ -62,14 +62,14 @@ func (k KemWrapper) Encapsulate(key KemPublicKey) (ctxt, secret []byte, err erro
 	if wk, ok := key.(*KemPublicKeyWrapper); ok {
 		return k.wrapped.Encapsulate(wk.PublicKey)
 	}
-	return nil, nil, IncompatibleKey
+	return nil, nil, ErrIncompatibleKey
 }
 
 func (k KemWrapper) Decapsulate(key KemPrivateKey, ctxt []byte) ([]byte, error) {
 	if wk, ok := key.(*KemPrivateKeyWrapper); ok {
 		return k.wrapped.Decapsulate(wk.PrivateKey, ctxt)
 	}
-	return nil, IncompatibleKey
+	return nil, ErrIncompatibleKey
 }
 
 func (k KemWrapper) UnmarshalBinaryPrivateKey(bytes []byte) (KemPrivateKey, error) {

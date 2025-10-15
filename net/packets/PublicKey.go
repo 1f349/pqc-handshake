@@ -41,7 +41,7 @@ func (p *PublicKeyPayload) Load(scheme crypto.KemScheme) (crypto.KemPublicKey, e
 
 func (p *PublicKeyPayload) Save(key crypto.KemPublicKey) error {
 	if key == nil {
-		return crypto.KeyNil
+		return crypto.ErrKeyNil
 	}
 	p.key = key
 	var err error

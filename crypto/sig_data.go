@@ -11,8 +11,7 @@ import (
 	"time"
 )
 
-var KeyNil = errors.New("key is nil")
-var SigGenFailed = errors.New("signature generation failed")
+var ErrKeyNil = errors.New("key is nil")
 
 // GetSignedDataPayload gets the signature data payload for signing; if hash is nil, the data itself is provided rather than its hash
 func GetSignedDataPayload(publicKey []byte, issueTime, expiryTime time.Time, hash hash.Hash) []byte {

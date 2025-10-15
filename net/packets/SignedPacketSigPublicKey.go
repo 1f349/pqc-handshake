@@ -41,7 +41,7 @@ func (p *SignedPacketSigPublicKeyPayload) Load(scheme crypto.SigScheme) (crypto.
 
 func (p *SignedPacketSigPublicKeyPayload) Save(key crypto.SigPublicKey) error {
 	if key == nil {
-		return crypto.KeyNil
+		return crypto.ErrKeyNil
 	}
 	p.key = key
 	var err error

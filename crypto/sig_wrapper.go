@@ -84,7 +84,7 @@ func (s SigWrapper) Sign(key SigPrivateKey, msg []byte) (stxt []byte, err error)
 		}()
 		return s.wrapped.Sign(wk.PrivateKey, msg, nil), nil
 	}
-	return nil, IncompatibleKey
+	return nil, ErrIncompatibleKey
 }
 
 func (s SigWrapper) Verify(key SigPublicKey, msg []byte, sig []byte) (v bool, err error) {
@@ -100,7 +100,7 @@ func (s SigWrapper) Verify(key SigPublicKey, msg []byte, sig []byte) (v bool, er
 		}()
 		return s.wrapped.Verify(wk.PublicKey, msg, sig, nil), nil
 	}
-	return false, IncompatibleKey
+	return false, ErrIncompatibleKey
 }
 
 func (s SigWrapper) PublicKeySize() int {

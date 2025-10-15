@@ -106,8 +106,8 @@ func testOnePayload(t *testing.T, marshal *PacketMarshaller, header PacketHeader
 	assert.NoError(t, err)
 	var rHeader *PacketHeader
 	var rPayload PacketPayload
-	err = FragmentReceived
-	for errors.Is(err, FragmentReceived) {
+	err = ErrFragmentReceived
+	for errors.Is(err, ErrFragmentReceived) {
 		rHeader, rPayload, err = marshal.Unmarshal()
 	}
 	assert.NotNil(t, rHeader)
@@ -135,7 +135,7 @@ func TestMTUWriterReader(t *testing.T) {
 
 	n, err = writer.Write(a2)
 	assert.Error(t, err)
-	assert.Equal(t, TooMuchData, err)
+	assert.Equal(t, ErrTooMuchData, err)
 	assert.NotEqual(t, 8, n)
 	assert.Equal(t, 0, n)
 
@@ -187,7 +187,7 @@ func TestFixedTransport(t *testing.T) {
 	assert.Error(t, err)
 	assert.NotEqual(t, mtu, n)
 	assert.Equal(t, 0, n)
-	assert.Equal(t, TooMuchData, err)
+	assert.Equal(t, ErrTooMuchData, err)
 
 	n, err = writer.Write(a1)
 	assert.NoError(t, err)
@@ -283,7 +283,7 @@ func (m *mtuWriter) Write(p []byte) (n int, err error) {
 		return 0, nil
 	}
 	if len(p) > m.mtu {
-		return 0, TooMuchData
+		return 0, ErrTooMuchData
 	}
 	return m.target.Write(p)
 }

@@ -11,7 +11,7 @@ import (
 
 const PublicKeySignedPacketType = PacketType(8)
 
-var SigNil = errors.New("sig nil")
+var ErrSigNil = errors.New("sig nil")
 
 type PublicKeySignedPacketPayload struct {
 	SignatureData []byte
@@ -45,7 +45,7 @@ func (p *PublicKeySignedPacketPayload) Size() uint {
 
 func (p *PublicKeySignedPacketPayload) Load(kemKeyToCheck crypto.KemPublicKey) (*crypto.SigData, error) {
 	if kemKeyToCheck == nil {
-		return nil, crypto.KeyNil
+		return nil, crypto.ErrKeyNil
 	}
 	bts, err := kemKeyToCheck.MarshalBinary()
 	if err != nil {
@@ -57,7 +57,7 @@ func (p *PublicKeySignedPacketPayload) Load(kemKeyToCheck crypto.KemPublicKey) (
 
 func (p *PublicKeySignedPacketPayload) Save(sigData *crypto.SigData) (err error) {
 	if sigData == nil {
-		return SigNil
+		return ErrSigNil
 	}
 	p.SignatureData, err = sigData.MarshalBinary()
 	return
