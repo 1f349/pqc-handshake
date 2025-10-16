@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"errors"
+	"github.com/1f349/handshake/net/packets"
 	"github.com/1f349/pqc-handshake/crypto"
 	"github.com/cloudflare/circl/kem/mlkem/mlkem768"
 	"github.com/cloudflare/circl/sign/mldsa/mldsa44"
@@ -32,82 +33,82 @@ func TestPacketMarshalFragmentedSmallMTU(t *testing.T) {
 }
 
 func sharedPacketMarshalTest(t *testing.T, transport io.ReadWriter, mtu uint) {
-	marshal := &PacketMarshaller{
+	marshal := &packets.PacketMarshaller{
 		Conn: transport,
 		MTU:  mtu,
 	}
-	connection := GetUUID()
-	pt := MilliTime(time.Now())
-	testOnePayload(t, marshal, PacketHeader{ID: ConnectionRejectedPacketType, ConnectionUUID: connection, Time: pt}, ValidEmptyPayload, emptyPayloadChecker)
-	testOnePayload(t, marshal, PacketHeader{ID: PublicKeyRequestPacketType, ConnectionUUID: connection, Time: pt}, ValidEmptyPayload, emptyPayloadChecker)
-	testOnePayload(t, marshal, PacketHeader{ID: SignatureRequestPacketType, ConnectionUUID: connection, Time: pt}, ValidEmptyPayload, emptyPayloadChecker)
-	testOnePayload(t, marshal, PacketHeader{ID: SignaturePublicKeyRequestPacketType, ConnectionUUID: connection, Time: pt}, ValidEmptyPayload, emptyPayloadChecker)
-	testOnePayload(t, marshal, PacketHeader{ID: PublicKeyDataPacketType, ConnectionUUID: connection, Time: pt}, GetValidPublicKeyPayload(), func(o PacketPayload, r PacketPayload) bool {
-		k, err := r.(*PublicKeyPayload).Load(crypto.WrapKem(mlkem768.Scheme()))
+	connection := packets.GetUUID()
+	pt := packets.MilliTime(time.Now())
+	testOnePayload(t, marshal, packets.PacketHeader{ID: packets.ConnectionRejectedPacketType, ConnectionUUID: connection, Time: pt}, &packets.EmptyPayload{}, emptyPayloadChecker)
+	testOnePayload(t, marshal, packets.PacketHeader{ID: packets.PublicKeyRequestPacketType, ConnectionUUID: connection, Time: pt}, &packets.EmptyPayload{}, emptyPayloadChecker)
+	testOnePayload(t, marshal, packets.PacketHeader{ID: packets.SignatureRequestPacketType, ConnectionUUID: connection, Time: pt}, &packets.EmptyPayload{}, emptyPayloadChecker)
+	testOnePayload(t, marshal, packets.PacketHeader{ID: packets.SignaturePublicKeyRequestPacketType, ConnectionUUID: connection, Time: pt}, &packets.EmptyPayload{}, emptyPayloadChecker)
+	testOnePayload(t, marshal, packets.PacketHeader{ID: packets.PublicKeyDataPacketType, ConnectionUUID: connection, Time: pt}, GetValidPublicKeyPayload(), func(o packets.PacketPayload, r packets.PacketPayload) bool {
+		k, err := r.(*packets.PublicKeyPayload).Load(crypto.WrapKem(mlkem768.Scheme()))
 		if err != nil || k == nil {
 			return false
 		}
-		ko, err := o.(*PublicKeyPayload).Load(nil)
+		ko, err := o.(*packets.PublicKeyPayload).Load(nil)
 		if err != nil || ko == nil {
 			return false
 		}
 		return ko.Equals(k)
 	})
-	testOnePayload(t, marshal, PacketHeader{ID: PublicKeyDataPacketType, ConnectionUUID: connection, Time: pt}, GetInvalidPublicKeyPayload(), func(o PacketPayload, r PacketPayload) bool {
-		k, err := r.(*PublicKeyPayload).Load(crypto.WrapKem(mlkem768.Scheme()))
+	testOnePayload(t, marshal, packets.PacketHeader{ID: packets.PublicKeyDataPacketType, ConnectionUUID: connection, Time: pt}, GetInvalidPublicKeyPayload(), func(o packets.PacketPayload, r packets.PacketPayload) bool {
+		k, err := r.(*packets.PublicKeyPayload).Load(crypto.WrapKem(mlkem768.Scheme()))
 		if err != nil && k == nil {
 			return true
 		}
 		return false
 	})
-	testOnePayload(t, marshal, PacketHeader{ID: SignedPacketSigPublicKeyPacketType, ConnectionUUID: connection, Time: pt}, GetValidSignedPacketSigPublicKeyPayload(), func(o PacketPayload, r PacketPayload) bool {
-		k, err := r.(*SignedPacketSigPublicKeyPayload).Load(crypto.WrapSig(mldsa44.Scheme()))
+	testOnePayload(t, marshal, packets.PacketHeader{ID: packets.SignedPacketSigPublicKeyPacketType, ConnectionUUID: connection, Time: pt}, GetValidSignedPacketSigPublicKeyPayload(), func(o packets.PacketPayload, r packets.PacketPayload) bool {
+		k, err := r.(*packets.SignedPacketSigPublicKeyPayload).Load(crypto.WrapSig(mldsa44.Scheme()))
 		if err != nil || k == nil {
 			return false
 		}
-		ko, err := o.(*SignedPacketSigPublicKeyPayload).Load(nil)
+		ko, err := o.(*packets.SignedPacketSigPublicKeyPayload).Load(nil)
 		if err != nil || ko == nil {
 			return false
 		}
 		return ko.Equals(k)
 	})
-	testOnePayload(t, marshal, PacketHeader{ID: SignedPacketSigPublicKeyPacketType, ConnectionUUID: connection, Time: pt}, GetInvalidSignedPacketSigPublicKeyPayload(), func(o PacketPayload, r PacketPayload) bool {
-		k, err := r.(*SignedPacketSigPublicKeyPayload).Load(crypto.WrapSig(mldsa44.Scheme()))
+	testOnePayload(t, marshal, packets.PacketHeader{ID: packets.SignedPacketSigPublicKeyPacketType, ConnectionUUID: connection, Time: pt}, GetInvalidSignedPacketSigPublicKeyPayload(), func(o packets.PacketPayload, r packets.PacketPayload) bool {
+		k, err := r.(*packets.SignedPacketSigPublicKeyPayload).Load(crypto.WrapSig(mldsa44.Scheme()))
 		if err != nil && k == nil {
 			return true
 		}
 		return false
 	})
-	testOnePayload(t, marshal, PacketHeader{ID: PublicKeySignedPacketType, ConnectionUUID: connection, Time: pt}, GetValidPublicKeySignedPacketPayload(), func(o PacketPayload, r PacketPayload) bool {
-		if !slices.Equal(validPublicKeySignedPacketPayloadSigPubKeyHash, r.(*PublicKeySignedPacketPayload).SigPubKeyHash) {
+	testOnePayload(t, marshal, packets.PacketHeader{ID: packets.PublicKeySignedPacketType, ConnectionUUID: connection, Time: pt}, GetValidPublicKeySignedPacketPayload(), func(o packets.PacketPayload, r packets.PacketPayload) bool {
+		if !slices.Equal(validPublicKeySignedPacketPayloadSigPubKeyHash, r.(*packets.PublicKeySignedPacketPayload).SigPubKeyHash) {
 			return false
 		}
-		sigData, err := r.(*PublicKeySignedPacketPayload).Load(validPublicKeySignedPacketPayloadKemPubKey)
+		sigData, err := r.(*packets.PublicKeySignedPacketPayload).Load(validPublicKeySignedPacketPayloadKemPubKey)
 		if err != nil || sigData.Signature == nil {
 			return false
 		}
 		return sigData.Verify(sha256.New(), validPublicKeySignedPacketPayloadSigPubKey)
 	})
-	testOnePayload(t, marshal, PacketHeader{ID: PublicKeySignedPacketType, ConnectionUUID: connection, Time: pt}, GetInvalidPublicKeySignedPacketPayload(), func(o PacketPayload, r PacketPayload) bool {
-		if !slices.Equal([]byte{0, 1, 2, 3}, r.(*PublicKeySignedPacketPayload).SigPubKeyHash) {
+	testOnePayload(t, marshal, packets.PacketHeader{ID: packets.PublicKeySignedPacketType, ConnectionUUID: connection, Time: pt}, GetInvalidPublicKeySignedPacketPayload(), func(o packets.PacketPayload, r packets.PacketPayload) bool {
+		if !slices.Equal([]byte{0, 1, 2, 3}, r.(*packets.PublicKeySignedPacketPayload).SigPubKeyHash) {
 			return false
 		}
-		sigData, err := r.(*PublicKeySignedPacketPayload).Load(validPublicKeySignedPacketPayloadKemPubKey)
+		sigData, err := r.(*packets.PublicKeySignedPacketPayload).Load(validPublicKeySignedPacketPayloadKemPubKey)
 		return err != nil && sigData.Signature == nil
 	})
 }
 
-func emptyPayloadChecker(o PacketPayload, r PacketPayload) bool {
+func emptyPayloadChecker(o packets.PacketPayload, r packets.PacketPayload) bool {
 	return true
 }
 
-func testOnePayload(t *testing.T, marshal *PacketMarshaller, header PacketHeader, payload PacketPayload, payloadChecker func(o PacketPayload, r PacketPayload) bool) {
+func testOnePayload(t *testing.T, marshal *packets.PacketMarshaller, header packets.PacketHeader, payload packets.PacketPayload, payloadChecker func(o packets.PacketPayload, r packets.PacketPayload) bool) {
 	err := marshal.Marshal(header, payload)
 	assert.NoError(t, err)
-	var rHeader *PacketHeader
-	var rPayload PacketPayload
-	err = ErrFragmentReceived
-	for errors.Is(err, ErrFragmentReceived) {
+	var rHeader *packets.PacketHeader
+	var rPayload packets.PacketPayload
+	err = packets.ErrFragmentReceived
+	for errors.Is(err, packets.ErrFragmentReceived) {
 		rHeader, rPayload, err = marshal.Unmarshal()
 	}
 	assert.NotNil(t, rHeader)
@@ -135,7 +136,7 @@ func TestMTUWriterReader(t *testing.T) {
 
 	n, err = writer.Write(a2)
 	assert.Error(t, err)
-	assert.Equal(t, ErrTooMuchData, err)
+	assert.Equal(t, packets.ErrTooMuchData, err)
 	assert.NotEqual(t, 8, n)
 	assert.Equal(t, 0, n)
 
@@ -187,7 +188,7 @@ func TestFixedTransport(t *testing.T) {
 	assert.Error(t, err)
 	assert.NotEqual(t, mtu, n)
 	assert.Equal(t, 0, n)
-	assert.Equal(t, ErrTooMuchData, err)
+	assert.Equal(t, packets.ErrTooMuchData, err)
 
 	n, err = writer.Write(a1)
 	assert.NoError(t, err)
@@ -283,7 +284,7 @@ func (m *mtuWriter) Write(p []byte) (n int, err error) {
 		return 0, nil
 	}
 	if len(p) > m.mtu {
-		return 0, ErrTooMuchData
+		return 0, packets.ErrTooMuchData
 	}
 	return m.target.Write(p)
 }

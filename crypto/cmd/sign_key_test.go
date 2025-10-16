@@ -4,7 +4,9 @@ package cmd
 
 import (
 	"crypto/sha256"
-	"github.com/1f349/pqc-handshake/crypto"
+	"github.com/1f349/handshake/crypto"
+	"github.com/1f349/handshake/crypto/cmd"
+	pqc_crypto "github.com/1f349/pqc-handshake/crypto"
 	"github.com/cloudflare/circl/kem/mlkem/mlkem768"
 	"github.com/cloudflare/circl/sign/mldsa/mldsa44"
 	"github.com/stretchr/testify/assert"
@@ -17,13 +19,13 @@ import (
 
 func TestMainSignKey(t *testing.T) {
 	dir := t.TempDir()
-	kemScheme := crypto.WrapKem(mlkem768.Scheme())
+	kemScheme := pqc_crypto.WrapKem(mlkem768.Scheme())
 	ekp, _, err := kemScheme.GenerateKeyPair()
 	assert.NoError(t, err)
 	ekpBts, err := ekp.MarshalBinary()
 	assert.NoError(t, err)
 	assert.NoError(t, os.WriteFile(dir+"/epubkey", ekpBts, 0644))
-	sigScheme := crypto.WrapSig(mldsa44.Scheme())
+	sigScheme := pqc_crypto.WrapSig(mldsa44.Scheme())
 	kp, k, err := sigScheme.GenerateKeyPair()
 	assert.NoError(t, err)
 	kBts, err := k.MarshalBinary()
@@ -57,7 +59,7 @@ func TestMainSignKey(t *testing.T) {
 	})
 	t.Run("command - epubkey sig Now()+1h", func(t *testing.T) {
 		exp := time.Now().Add(time.Hour)
-		os.Args = []string{"testing", "-", dir + "/epubkey", dir + "/sig", exp.Format(RFC3339Milli)}
+		os.Args = []string{"testing", "-", dir + "/epubkey", dir + "/sig", exp.Format(cmd.RFC3339Milli)}
 		assert.NoError(t, writeStdIn(dir, kBts))
 		stdin := getStdIn(dir)
 		testMainSignKey(t, dir, sigScheme, tHash, ekpBts, kp, time.Time{}, exp, tFunc, nil, stdin, 0, false)
@@ -79,7 +81,7 @@ func TestMainSignKey(t *testing.T) {
 	t.Run("command privkey - - 1h Now()+10ms", func(t *testing.T) {
 		iss := time.Now().Add(10 * time.Millisecond)
 		exp := iss.Add(time.Hour)
-		os.Args = []string{"testing", dir + "/privkey", "-", "-", "1h", iss.Format(RFC3339Milli)}
+		os.Args = []string{"testing", dir + "/privkey", "-", "-", "1h", iss.Format(cmd.RFC3339Milli)}
 		assert.NoError(t, writeStdIn(dir, ekpBts))
 		stdin := getStdIn(dir)
 		stdout := getStdOut(dir)
@@ -88,7 +90,7 @@ func TestMainSignKey(t *testing.T) {
 	t.Run("fail-verify privkey - - 1h Now()+1s", func(t *testing.T) {
 		iss := time.Now().Add(time.Second)
 		exp := iss.Add(time.Hour)
-		os.Args = []string{"testing", dir + "/privkey", "-", "-", "1h", iss.Format(RFC3339Milli)}
+		os.Args = []string{"testing", dir + "/privkey", "-", "-", "1h", iss.Format(cmd.RFC3339Milli)}
 		assert.NoError(t, writeStdIn(dir, ekpBts))
 		stdin := getStdIn(dir)
 		stdout := getStdOut(dir)
@@ -97,7 +99,7 @@ func TestMainSignKey(t *testing.T) {
 	t.Run("command privkey - - Now()+1m UnixMilli(Now()+25ms)", func(t *testing.T) {
 		iss := time.Now().Add(25 * time.Millisecond)
 		exp := iss.Add(time.Minute)
-		os.Args = []string{"testing", dir + "/privkey", "-", "-", exp.Format(RFC3339Milli), strconv.FormatInt(iss.UnixMilli(), 10)}
+		os.Args = []string{"testing", dir + "/privkey", "-", "-", exp.Format(cmd.RFC3339Milli), strconv.FormatInt(iss.UnixMilli(), 10)}
 		assert.NoError(t, writeStdIn(dir, ekpBts))
 		stdin := getStdIn(dir)
 		stdout := getStdOut(dir)
@@ -105,17 +107,17 @@ func TestMainSignKey(t *testing.T) {
 	})
 	t.Run("Usage", func(t *testing.T) {
 		os.Args = []string{"testing"}
-		mainSignKey(sigScheme, tHash, "a", "b", "c", "d", "e", uFunc, nil, nil)
+		cmd.TestingMainSignKey(sigScheme, tHash, "a", "b", "c", "d", "e", uFunc, nil, nil)
 	})
 	t.Run("Double stdin", func(t *testing.T) {
 		os.Args = []string{"testing", "-", "-", "-"}
-		mainSignKey(sigScheme, tHash, "a", "b", "c", "d", "e", uFunc, nil, nil)
+		cmd.TestingMainSignKey(sigScheme, tHash, "a", "b", "c", "d", "e", uFunc, nil, nil)
 	})
 }
 
 func testMainSignKey(t *testing.T, dir string, sigScheme crypto.SigScheme, hashScheme hash.Hash,
 	ekp []byte, kp crypto.SigPublicKey, issue, expiry time.Time, close func(code int), stdout, stdin *os.File, delay time.Duration, failing bool) {
-	mainSignKey(sigScheme, hashScheme, "a", "b", "c", "d", "e", close, stdout, stdin)
+	cmd.TestingMainSignKey(sigScheme, hashScheme, "a", "b", "c", "d", "e", close, stdout, stdin)
 	if delay > 0 {
 		time.Sleep(delay)
 	}
@@ -137,99 +139,4 @@ func testMainSignKey(t *testing.T, dir string, sigScheme crypto.SigScheme, hashS
 	}
 	v := sd.Verify(hashScheme, kp)
 	assert.Equal(t, !failing, v)
-}
-
-func TestGetDateTimeFromString(t *testing.T) {
-	t.Run("Empty", func(t *testing.T) {
-		dt := getDateTimeFromString("")
-		assert.Equal(t, time.Time{}, dt)
-	})
-	t.Run("Zero", func(t *testing.T) {
-		dt := getDateTimeFromString("0")
-		assert.Equal(t, time.UnixMilli(0), dt)
-	})
-	t.Run("One", func(t *testing.T) {
-		dt := getDateTimeFromString("1")
-		assert.Equal(t, time.UnixMilli(1), dt)
-	})
-	t.Run("-One", func(t *testing.T) {
-		dt := getDateTimeFromString("-1")
-		assert.Equal(t, time.UnixMilli(-1), dt)
-	})
-	t.Run("Invalid", func(t *testing.T) {
-		dt := getDateTimeFromString("invalid")
-		assert.Equal(t, time.Time{}, dt)
-	})
-	t.Run("RFC3339", func(t *testing.T) {
-		dt := getDateTimeFromString("2006-01-02T15:04:05+07:00")
-		et, err := time.Parse(time.RFC3339, "2006-01-02T15:04:05+07:00")
-		assert.NoError(t, err)
-		assert.Equal(t, et, dt)
-	})
-	t.Run("RFC3339Milli", func(t *testing.T) {
-		dt := getDateTimeFromString("2006-01-02T15:04:05.989+07:00")
-		et, err := time.Parse(RFC3339Milli, "2006-01-02T15:04:05.989+07:00")
-		assert.NoError(t, err)
-		assert.Equal(t, et, dt)
-	})
-	t.Run("RFC1123Z-Fail", func(t *testing.T) {
-		dt := getDateTimeFromString(time.RFC1123Z)
-		et, err := time.Parse(time.RFC1123Z, time.RFC1123Z)
-		assert.NoError(t, err)
-		assert.NotEqual(t, et, dt)
-		assert.True(t, dt.IsZero())
-	})
-}
-
-func TestGetDateTimeWithDurationFromString(t *testing.T) {
-	base := time.Now()
-	t.Run("Empty", func(t *testing.T) {
-		dt := getDateTimeWithDurationFromString("", base)
-		assert.Equal(t, time.Time{}, dt)
-	})
-	t.Run("Zero", func(t *testing.T) {
-		dt := getDateTimeWithDurationFromString("0", base)
-		assert.Equal(t, time.UnixMilli(0), dt)
-	})
-	t.Run("One", func(t *testing.T) {
-		dt := getDateTimeWithDurationFromString("1", base)
-		assert.Equal(t, time.UnixMilli(1), dt)
-	})
-	t.Run("-One", func(t *testing.T) {
-		dt := getDateTimeWithDurationFromString("-1", base)
-		assert.Equal(t, time.UnixMilli(-1), dt)
-	})
-	t.Run("Invalid", func(t *testing.T) {
-		dt := getDateTimeWithDurationFromString("invalid", base)
-		assert.Equal(t, time.Time{}, dt)
-	})
-	t.Run("RFC3339", func(t *testing.T) {
-		dt := getDateTimeWithDurationFromString("2006-01-02T15:04:05+07:00", base)
-		et, err := time.Parse(time.RFC3339, "2006-01-02T15:04:05+07:00")
-		assert.NoError(t, err)
-		assert.Equal(t, et, dt)
-	})
-	t.Run("RFC3339Milli", func(t *testing.T) {
-		dt := getDateTimeWithDurationFromString("2006-01-02T15:04:05.989+07:00", base)
-		et, err := time.Parse(RFC3339Milli, "2006-01-02T15:04:05.989+07:00")
-		assert.NoError(t, err)
-		assert.Equal(t, et, dt)
-	})
-	t.Run("RFC1123Z-Fail", func(t *testing.T) {
-		dt := getDateTimeWithDurationFromString(time.RFC1123Z, base)
-		et, err := time.Parse(time.RFC1123Z, time.RFC1123Z)
-		assert.NoError(t, err)
-		assert.NotEqual(t, et, dt)
-		assert.True(t, dt.IsZero())
-	})
-	t.Run("Duration10m", func(t *testing.T) {
-		dt := getDateTimeWithDurationFromString("10m", base)
-		et := base.Add(10 * time.Minute)
-		assert.Equal(t, et, dt)
-	})
-	t.Run("Duration-10m", func(t *testing.T) {
-		dt := getDateTimeWithDurationFromString("-10m", base)
-		et := base.Add(-10 * time.Minute)
-		assert.Equal(t, et, dt)
-	})
 }

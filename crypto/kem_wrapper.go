@@ -4,6 +4,7 @@ package crypto
 
 import (
 	"errors"
+	"github.com/1f349/handshake/crypto"
 	"github.com/cloudflare/circl/kem"
 	"sync"
 )
@@ -50,7 +51,7 @@ func (k KemWrapper) Name() string {
 	return k.wrapped.Name()
 }
 
-func (k KemWrapper) GenerateKeyPair() (KemPublicKey, KemPrivateKey, error) {
+func (k KemWrapper) GenerateKeyPair() (crypto.KemPublicKey, crypto.KemPrivateKey, error) {
 	p, q, err := k.wrapped.GenerateKeyPair()
 	if err != nil {
 		return nil, nil, err
@@ -58,21 +59,21 @@ func (k KemWrapper) GenerateKeyPair() (KemPublicKey, KemPrivateKey, error) {
 	return &KemPublicKeyWrapper{p}, &KemPrivateKeyWrapper{q}, nil
 }
 
-func (k KemWrapper) Encapsulate(key KemPublicKey) (ctxt, secret []byte, err error) {
+func (k KemWrapper) Encapsulate(key crypto.KemPublicKey) (ctxt, secret []byte, err error) {
 	if wk, ok := key.(*KemPublicKeyWrapper); ok {
 		return k.wrapped.Encapsulate(wk.PublicKey)
 	}
 	return nil, nil, ErrIncompatibleKey
 }
 
-func (k KemWrapper) Decapsulate(key KemPrivateKey, ctxt []byte) ([]byte, error) {
+func (k KemWrapper) Decapsulate(key crypto.KemPrivateKey, ctxt []byte) ([]byte, error) {
 	if wk, ok := key.(*KemPrivateKeyWrapper); ok {
 		return k.wrapped.Decapsulate(wk.PrivateKey, ctxt)
 	}
 	return nil, ErrIncompatibleKey
 }
 
-func (k KemWrapper) UnmarshalBinaryPrivateKey(bytes []byte) (KemPrivateKey, error) {
+func (k KemWrapper) UnmarshalBinaryPrivateKey(bytes []byte) (crypto.KemPrivateKey, error) {
 	wk, err := k.wrapped.UnmarshalBinaryPrivateKey(bytes)
 	if err != nil {
 		return nil, err
@@ -80,7 +81,7 @@ func (k KemWrapper) UnmarshalBinaryPrivateKey(bytes []byte) (KemPrivateKey, erro
 	return &KemPrivateKeyWrapper{wk}, nil
 }
 
-func (k KemWrapper) UnmarshalBinaryPublicKey(bytes []byte) (KemPublicKey, error) {
+func (k KemWrapper) UnmarshalBinaryPublicKey(bytes []byte) (crypto.KemPublicKey, error) {
 	wk, err := k.wrapped.UnmarshalBinaryPublicKey(bytes)
 	if err != nil {
 		return nil, err
@@ -109,11 +110,11 @@ type KemPublicKeyWrapper struct {
 	kem.PublicKey
 }
 
-func (k KemPublicKeyWrapper) Scheme() KemScheme {
+func (k KemPublicKeyWrapper) Scheme() crypto.KemScheme {
 	return getKemWrapper(k.PublicKey.Scheme())
 }
 
-func (k KemPublicKeyWrapper) Equals(key KemPublicKey) bool {
+func (k KemPublicKeyWrapper) Equals(key crypto.KemPublicKey) bool {
 	if wk, ok := key.(*KemPublicKeyWrapper); ok {
 		return k.PublicKey.Equal(wk.PublicKey)
 	}
@@ -128,11 +129,11 @@ type KemPrivateKeyWrapper struct {
 	kem.PrivateKey
 }
 
-func (k KemPrivateKeyWrapper) Scheme() KemScheme {
+func (k KemPrivateKeyWrapper) Scheme() crypto.KemScheme {
 	return getKemWrapper(k.PrivateKey.Scheme())
 }
 
-func (k KemPrivateKeyWrapper) Equals(key KemPrivateKey) bool {
+func (k KemPrivateKeyWrapper) Equals(key crypto.KemPrivateKey) bool {
 	if wk, ok := key.(*KemPrivateKeyWrapper); ok {
 		return k.PrivateKey.Equal(wk.PrivateKey)
 	}
@@ -142,6 +143,6 @@ func (k KemPrivateKeyWrapper) Equals(key KemPrivateKey) bool {
 	return false
 }
 
-func (k KemPrivateKeyWrapper) Public() KemPublicKey {
+func (k KemPrivateKeyWrapper) Public() crypto.KemPublicKey {
 	return &KemPublicKeyWrapper{k.PrivateKey.Public()}
 }

@@ -4,6 +4,7 @@ package crypto
 
 import (
 	"crypto/sha256"
+	"github.com/1f349/handshake/crypto"
 	"github.com/cloudflare/circl/kem/mlkem/mlkem768"
 	"github.com/cloudflare/circl/sign/mldsa/mldsa44"
 	"github.com/stretchr/testify/assert"
@@ -13,43 +14,66 @@ import (
 )
 
 func TestSigData(t *testing.T) {
+	scheme := WrapSig(mldsa44.Scheme())
+	pk, k, err := scheme.GenerateKeyPair()
+	assert.NoError(t, err)
+	processTestSigData(t, k, pk, false)
+}
+
+func TestSigDataWrongKey(t *testing.T) {
+	scheme := WrapSig(mldsa44.Scheme())
+	pk, _, err := scheme.GenerateKeyPair()
+	assert.NoError(t, err)
+	_, k, err := scheme.GenerateKeyPair()
+	assert.NoError(t, err)
+	assert.False(t, k.Public().Equals(pk))
+	processTestSigData(t, k, pk, true)
+}
+
+func processTestSigData(t *testing.T, k crypto.SigPrivateKey, pk crypto.SigPublicKey, allFail bool) {
 	tHash := sha256.New()
 	kScheme := WrapKem(mlkem768.Scheme())
 	sk, _, err := kScheme.GenerateKeyPair()
 	assert.NoError(t, err)
 	skb, err := sk.MarshalBinary()
 	assert.NoError(t, err)
-	scheme := WrapSig(mldsa44.Scheme())
-	pk, k, err := scheme.GenerateKeyPair()
-	assert.NoError(t, err)
 	sigs := make([][]byte, 0, 9)
-	sigs = append(sigs, []byte{})                                                                                           // Empty Data
-	sigs = append(sigs, damageBytes(getSigData(t, NewSigData(skb, time.Now(), time.Now().Add(time.Hour), tHash, k))))       // Damaged data
-	sigs = append(sigs, getSigData(t, damageMeta(NewSigData(skb, time.Now(), time.Now().Add(time.Hour), tHash, k))))        // Damaged meta
-	sigs = append(sigs, getSigData(t, NewSigData(skb, time.Now().Add(time.Hour), time.Now().Add(time.Hour*2), tHash, k)))   // Not yet valid
-	sigs = append(sigs, getSigData(t, NewSigData(skb, time.Now().Add(-time.Hour), time.Now().Add(-time.Minute), tHash, k))) // Expired
-	sigs = append(sigs, getSigData(t, NewSigData(skb, time.Now().Add(time.Hour), time.Now().Add(time.Hour*2), nil, k)))     // Not yet valid (Full data)
-	sigs = append(sigs, getSigData(t, NewSigData(skb, time.Now().Add(-time.Hour), time.Now().Add(-time.Minute), nil, k)))   // Expired (Full data)
-	sigs = append(sigs, getSigData(t, NewSigData(skb, time.Now(), time.Now().Add(time.Minute*5), tHash, k)))                // Valid
-	sigs = append(sigs, getSigData(t, NewSigData(skb, time.Now(), time.Now().Add(time.Minute*5), nil, k)))                  // Valid (Full data)
+	sigs = append(sigs, []byte{})                                                                                                  // Empty Data
+	sigs = append(sigs, damageBytes(getSigData(t, crypto.NewSigData(skb, time.Now(), time.Now().Add(time.Hour), tHash, k))))       // Damaged data
+	sigs = append(sigs, getSigData(t, damageMeta(crypto.NewSigData(skb, time.Now(), time.Now().Add(time.Hour), tHash, k))))        // Damaged meta
+	sigs = append(sigs, getSigData(t, crypto.NewSigData(skb, time.Now().Add(time.Hour), time.Now().Add(time.Hour*2), tHash, k)))   // Not yet valid
+	sigs = append(sigs, getSigData(t, crypto.NewSigData(skb, time.Now().Add(-time.Hour), time.Now().Add(-time.Minute), tHash, k))) // Expired
+	sigs = append(sigs, getSigData(t, crypto.NewSigData(skb, time.Now().Add(time.Hour), time.Now().Add(time.Hour*2), nil, k)))     // Not yet valid (Full data)
+	sigs = append(sigs, getSigData(t, crypto.NewSigData(skb, time.Now().Add(-time.Hour), time.Now().Add(-time.Minute), nil, k)))   // Expired (Full data)
+	sigs = append(sigs, getSigData(t, crypto.NewSigData(skb, time.Now(), time.Now().Add(time.Minute*5), tHash, k)))                // Valid
+	sigs = append(sigs, getSigData(t, crypto.NewSigData(skb, time.Now(), time.Now().Add(time.Minute*5), nil, k)))                  // Valid (Full data)
 	var results = []bool{false, false, false, false, false, false, false, true, true}
 	var hashes = []hash.Hash{nil, tHash, tHash, tHash, tHash, nil, nil, tHash, nil}
 	var name = []string{"Empty Data", "Damaged data", "Damaged meta", "Not yet valid", "Expired", "Not yet valid (Full data)", "Expired (Full data)", "Valid", "Valid (Full data)"}
+	if allFail {
+		for idx := range name {
+			name[idx] = name[idx] + " Wrong Key"
+		}
+	}
 	for idx, s := range sigs {
 		t.Run(name[idx], func(t *testing.T) {
-			sData := &SigData{PublicKey: skb}
+			sData := &crypto.SigData{PublicKey: skb}
 			err := sData.UnmarshalBinary(s)
 			if idx == 0 {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
 			}
-			assert.Equal(t, results[idx], sData.Verify(hashes[idx], pk))
+			if allFail {
+				assert.False(t, sData.Verify(hashes[idx], pk))
+			} else {
+				assert.Equal(t, results[idx], sData.Verify(hashes[idx], pk))
+			}
 		})
 	}
 }
 
-func getSigData(t *testing.T, d *SigData) []byte {
+func getSigData(t *testing.T, d *crypto.SigData) []byte {
 	assert.NotNil(t, d)
 	bts, err := d.MarshalBinary()
 	assert.NoError(t, err)
@@ -64,7 +88,7 @@ func damageBytes(bts []byte) []byte {
 	return bts
 }
 
-func damageMeta(d *SigData) *SigData {
+func damageMeta(d *crypto.SigData) *crypto.SigData {
 	if d == nil {
 		return nil
 	}

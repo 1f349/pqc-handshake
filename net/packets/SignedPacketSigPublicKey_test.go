@@ -4,18 +4,19 @@ package packets
 
 import (
 	"bytes"
+	"github.com/1f349/handshake/net/packets"
 	"github.com/1f349/pqc-handshake/crypto"
 	"github.com/cloudflare/circl/sign/mldsa/mldsa44"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-var validSignedPacketSigPublicKeyPayload *SignedPacketSigPublicKeyPayload = nil
-var invalidSignedPacketSigPublicKeyPayload *SignedPacketSigPublicKeyPayload = nil
+var validSignedPacketSigPublicKeyPayload *packets.SignedPacketSigPublicKeyPayload = nil
+var invalidSignedPacketSigPublicKeyPayload *packets.SignedPacketSigPublicKeyPayload = nil
 
-func GetValidSignedPacketSigPublicKeyPayload() *SignedPacketSigPublicKeyPayload {
+func GetValidSignedPacketSigPublicKeyPayload() *packets.SignedPacketSigPublicKeyPayload {
 	if validSignedPacketSigPublicKeyPayload == nil {
-		validSignedPacketSigPublicKeyPayload = &SignedPacketSigPublicKeyPayload{}
+		validSignedPacketSigPublicKeyPayload = &packets.SignedPacketSigPublicKeyPayload{}
 		scheme := crypto.WrapSig(mldsa44.Scheme())
 		k, _, err := scheme.GenerateKeyPair()
 		if err != nil {
@@ -30,11 +31,11 @@ func GetValidSignedPacketSigPublicKeyPayload() *SignedPacketSigPublicKeyPayload 
 	return validSignedPacketSigPublicKeyPayload
 }
 
-func GetInvalidSignedPacketSigPublicKeyPayload() *SignedPacketSigPublicKeyPayload {
+func GetInvalidSignedPacketSigPublicKeyPayload() *packets.SignedPacketSigPublicKeyPayload {
 	if invalidSignedPacketSigPublicKeyPayload != nil {
 		return invalidSignedPacketSigPublicKeyPayload
 	}
-	invalidSignedPacketSigPublicKeyPayload = &SignedPacketSigPublicKeyPayload{Data: []byte{0, 1, 2, 3}}
+	invalidSignedPacketSigPublicKeyPayload = &packets.SignedPacketSigPublicKeyPayload{Data: []byte{0, 1, 2, 3}}
 	return invalidSignedPacketSigPublicKeyPayload
 }
 
@@ -45,7 +46,7 @@ func TestValidSignedPacketSigPublicKeyPayload(t *testing.T) {
 	assert.NoError(t, err)
 	assert.GreaterOrEqual(t, n, int64(0))
 	assert.Equal(t, payload.Size(), uint(n))
-	rPayload := &SignedPacketSigPublicKeyPayload{}
+	rPayload := &packets.SignedPacketSigPublicKeyPayload{}
 	n, err = rPayload.ReadFrom(buff)
 	assert.NoError(t, err)
 	assert.GreaterOrEqual(t, n, int64(0))
@@ -68,7 +69,7 @@ func TestInvalidSignedPacketSigPublicKeyPayload(t *testing.T) {
 	assert.NoError(t, err)
 	assert.GreaterOrEqual(t, n, int64(0))
 	assert.Equal(t, payload.Size(), uint(n))
-	rPayload := &SignedPacketSigPublicKeyPayload{}
+	rPayload := &packets.SignedPacketSigPublicKeyPayload{}
 	n, err = rPayload.ReadFrom(buff)
 	assert.NoError(t, err)
 	assert.GreaterOrEqual(t, n, int64(0))

@@ -4,18 +4,19 @@ package packets
 
 import (
 	"bytes"
+	"github.com/1f349/handshake/net/packets"
 	"github.com/1f349/pqc-handshake/crypto"
 	"github.com/cloudflare/circl/kem/mlkem/mlkem768"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-var validPublicKeyPayload *PublicKeyPayload = nil
-var invalidPublicKeyPayload *PublicKeyPayload = nil
+var validPublicKeyPayload *packets.PublicKeyPayload = nil
+var invalidPublicKeyPayload *packets.PublicKeyPayload = nil
 
-func GetValidPublicKeyPayload() *PublicKeyPayload {
+func GetValidPublicKeyPayload() *packets.PublicKeyPayload {
 	if validPublicKeyPayload == nil {
-		validPublicKeyPayload = &PublicKeyPayload{}
+		validPublicKeyPayload = &packets.PublicKeyPayload{}
 		scheme := crypto.WrapKem(mlkem768.Scheme())
 		k, _, err := scheme.GenerateKeyPair()
 		if err != nil {
@@ -29,11 +30,11 @@ func GetValidPublicKeyPayload() *PublicKeyPayload {
 	return validPublicKeyPayload
 }
 
-func GetInvalidPublicKeyPayload() *PublicKeyPayload {
+func GetInvalidPublicKeyPayload() *packets.PublicKeyPayload {
 	if invalidPublicKeyPayload != nil {
 		return invalidPublicKeyPayload
 	}
-	invalidPublicKeyPayload = &PublicKeyPayload{Data: []byte{0, 1, 2, 3}}
+	invalidPublicKeyPayload = &packets.PublicKeyPayload{Data: []byte{0, 1, 2, 3}}
 	return invalidPublicKeyPayload
 }
 
@@ -44,7 +45,7 @@ func TestValidPublicKeyPayload(t *testing.T) {
 	assert.NoError(t, err)
 	assert.GreaterOrEqual(t, n, int64(0))
 	assert.Equal(t, payload.Size(), uint(n))
-	rPayload := &PublicKeyPayload{}
+	rPayload := &packets.PublicKeyPayload{}
 	n, err = rPayload.ReadFrom(buff)
 	assert.NoError(t, err)
 	assert.GreaterOrEqual(t, n, int64(0))
@@ -67,7 +68,7 @@ func TestInvalidPublicKeyPayload(t *testing.T) {
 	assert.NoError(t, err)
 	assert.GreaterOrEqual(t, n, int64(0))
 	assert.Equal(t, payload.Size(), uint(n))
-	rPayload := &PublicKeyPayload{}
+	rPayload := &packets.PublicKeyPayload{}
 	n, err = rPayload.ReadFrom(buff)
 	assert.NoError(t, err)
 	assert.GreaterOrEqual(t, n, int64(0))

@@ -3,6 +3,7 @@
 package crypto
 
 import (
+	"github.com/1f349/handshake/crypto"
 	"github.com/cloudflare/circl/sign"
 	"sync"
 )
@@ -47,7 +48,7 @@ func (s SigWrapper) Name() string {
 	return s.wrapped.Name()
 }
 
-func (s SigWrapper) GenerateKeyPair() (SigPublicKey, SigPrivateKey, error) {
+func (s SigWrapper) GenerateKeyPair() (crypto.SigPublicKey, crypto.SigPrivateKey, error) {
 	p, q, err := s.wrapped.GenerateKey()
 	if err != nil {
 		return nil, nil, err
@@ -55,7 +56,7 @@ func (s SigWrapper) GenerateKeyPair() (SigPublicKey, SigPrivateKey, error) {
 	return &SigPublicKeyWrapper{p}, &SigPrivateKeyWrapper{q}, nil
 }
 
-func (s SigWrapper) UnmarshalBinaryPrivateKey(bytes []byte) (SigPrivateKey, error) {
+func (s SigWrapper) UnmarshalBinaryPrivateKey(bytes []byte) (crypto.SigPrivateKey, error) {
 	wk, err := s.wrapped.UnmarshalBinaryPrivateKey(bytes)
 	if err != nil {
 		return nil, err
@@ -63,7 +64,7 @@ func (s SigWrapper) UnmarshalBinaryPrivateKey(bytes []byte) (SigPrivateKey, erro
 	return &SigPrivateKeyWrapper{wk}, nil
 }
 
-func (s SigWrapper) UnmarshalBinaryPublicKey(bytes []byte) (SigPublicKey, error) {
+func (s SigWrapper) UnmarshalBinaryPublicKey(bytes []byte) (crypto.SigPublicKey, error) {
 	wk, err := s.wrapped.UnmarshalBinaryPublicKey(bytes)
 	if err != nil {
 		return nil, err
@@ -71,7 +72,7 @@ func (s SigWrapper) UnmarshalBinaryPublicKey(bytes []byte) (SigPublicKey, error)
 	return &SigPublicKeyWrapper{wk}, nil
 }
 
-func (s SigWrapper) Sign(key SigPrivateKey, msg []byte) (stxt []byte, err error) {
+func (s SigWrapper) Sign(key crypto.SigPrivateKey, msg []byte) (stxt []byte, err error) {
 	if wk, ok := key.(*SigPrivateKeyWrapper); ok {
 		defer func() {
 			if r := recover(); r != nil {
@@ -87,7 +88,7 @@ func (s SigWrapper) Sign(key SigPrivateKey, msg []byte) (stxt []byte, err error)
 	return nil, ErrIncompatibleKey
 }
 
-func (s SigWrapper) Verify(key SigPublicKey, msg []byte, sig []byte) (v bool, err error) {
+func (s SigWrapper) Verify(key crypto.SigPublicKey, msg []byte, sig []byte) (v bool, err error) {
 	if wk, ok := key.(*SigPublicKeyWrapper); ok {
 		defer func() {
 			if r := recover(); r != nil {
@@ -120,11 +121,11 @@ type SigPublicKeyWrapper struct {
 	sign.PublicKey
 }
 
-func (k SigPublicKeyWrapper) Scheme() SigScheme {
+func (k SigPublicKeyWrapper) Scheme() crypto.SigScheme {
 	return getSigWrapper(k.PublicKey.Scheme())
 }
 
-func (k SigPublicKeyWrapper) Equals(key SigPublicKey) bool {
+func (k SigPublicKeyWrapper) Equals(key crypto.SigPublicKey) bool {
 	if wk, ok := key.(*SigPublicKeyWrapper); ok {
 		return k.PublicKey.Equal(wk.PublicKey)
 	}
@@ -139,11 +140,11 @@ type SigPrivateKeyWrapper struct {
 	sign.PrivateKey
 }
 
-func (k SigPrivateKeyWrapper) Scheme() SigScheme {
+func (k SigPrivateKeyWrapper) Scheme() crypto.SigScheme {
 	return getSigWrapper(k.PrivateKey.Scheme())
 }
 
-func (k SigPrivateKeyWrapper) Equals(key SigPrivateKey) bool {
+func (k SigPrivateKeyWrapper) Equals(key crypto.SigPrivateKey) bool {
 	if wk, ok := key.(*SigPrivateKeyWrapper); ok {
 		return k.PrivateKey.Equal(wk.PrivateKey)
 	}
@@ -153,7 +154,7 @@ func (k SigPrivateKeyWrapper) Equals(key SigPrivateKey) bool {
 	return false
 }
 
-func (k SigPrivateKeyWrapper) Public() SigPublicKey {
+func (k SigPrivateKeyWrapper) Public() crypto.SigPublicKey {
 	if ak, ok := k.PrivateKey.Public().(sign.PublicKey); ok {
 		return &SigPublicKeyWrapper{ak}
 	}
