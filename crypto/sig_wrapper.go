@@ -73,6 +73,9 @@ func (s SigWrapper) UnmarshalBinaryPublicKey(bytes []byte) (crypto.SigPublicKey,
 }
 
 func (s SigWrapper) Sign(key crypto.SigPrivateKey, msg []byte) (stxt []byte, err error) {
+	if key == nil {
+		return nil, crypto.ErrKeyNil
+	}
 	if wk, ok := key.(*SigPrivateKeyWrapper); ok {
 		defer func() {
 			if r := recover(); r != nil {
@@ -85,10 +88,13 @@ func (s SigWrapper) Sign(key crypto.SigPrivateKey, msg []byte) (stxt []byte, err
 		}()
 		return s.wrapped.Sign(wk.PrivateKey, msg, nil), nil
 	}
-	return nil, ErrIncompatibleKey
+	return nil, crypto.ErrIncompatibleKey
 }
 
-func (s SigWrapper) Verify(key crypto.SigPublicKey, msg []byte, sig []byte) (v bool, err error) {
+func (s SigWrapper) Verify(key crypto.SigPublicKey, msg []byte, stxt []byte) (v bool, err error) {
+	if key == nil {
+		return false, crypto.ErrKeyNil
+	}
 	if wk, ok := key.(*SigPublicKeyWrapper); ok {
 		defer func() {
 			if r := recover(); r != nil {
@@ -99,9 +105,9 @@ func (s SigWrapper) Verify(key crypto.SigPublicKey, msg []byte, sig []byte) (v b
 				}
 			}
 		}()
-		return s.wrapped.Verify(wk.PublicKey, msg, sig, nil), nil
+		return s.wrapped.Verify(wk.PublicKey, msg, stxt, nil), nil
 	}
-	return false, ErrIncompatibleKey
+	return false, crypto.ErrIncompatibleKey
 }
 
 func (s SigWrapper) PublicKeySize() int {

@@ -3,13 +3,10 @@
 package crypto
 
 import (
-	"errors"
 	"github.com/1f349/handshake/crypto"
 	"github.com/cloudflare/circl/kem"
 	"sync"
 )
-
-var ErrIncompatibleKey = errors.New("incompatible key")
 
 var kemWrappedMap = make(map[kem.Scheme]*KemWrapper)
 var slockKemWrappedMap = &sync.RWMutex{}
@@ -60,17 +57,23 @@ func (k KemWrapper) GenerateKeyPair() (crypto.KemPublicKey, crypto.KemPrivateKey
 }
 
 func (k KemWrapper) Encapsulate(key crypto.KemPublicKey) (ctxt, secret []byte, err error) {
+	if key == nil {
+		return nil, nil, crypto.ErrKeyNil
+	}
 	if wk, ok := key.(*KemPublicKeyWrapper); ok {
 		return k.wrapped.Encapsulate(wk.PublicKey)
 	}
-	return nil, nil, ErrIncompatibleKey
+	return nil, nil, crypto.ErrIncompatibleKey
 }
 
 func (k KemWrapper) Decapsulate(key crypto.KemPrivateKey, ctxt []byte) ([]byte, error) {
+	if key == nil {
+		return nil, crypto.ErrKeyNil
+	}
 	if wk, ok := key.(*KemPrivateKeyWrapper); ok {
 		return k.wrapped.Decapsulate(wk.PrivateKey, ctxt)
 	}
-	return nil, ErrIncompatibleKey
+	return nil, crypto.ErrIncompatibleKey
 }
 
 func (k KemWrapper) UnmarshalBinaryPrivateKey(bytes []byte) (crypto.KemPrivateKey, error) {
