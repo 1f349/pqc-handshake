@@ -3,7 +3,7 @@ module github.com/1f349/pqc-handshake
 go 1.24.0
 
 require (
-	github.com/1f349/handshake v0.0.0-20251016195541-491ab70c6595
+	github.com/1f349/handshake v0.0.1
 	github.com/cloudflare/circl v1.6.1
 	github.com/stretchr/testify v1.11.1
 )

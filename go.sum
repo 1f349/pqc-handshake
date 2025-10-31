@@ -1,5 +1,5 @@
-github.com/1f349/handshake v0.0.0-20251016195541-491ab70c6595 h1:Puw9asfQHxGtaxpVubvM3F+zKbkrIcWx8AcICls5SHI=
-github.com/1f349/handshake v0.0.0-20251016195541-491ab70c6595/go.mod h1:xd72LdnSYEr/ssjtYKO/gtehFH63mTjbRbv/9rVmq6E=
+github.com/1f349/handshake v0.0.1 h1:RMTckO9Xja7MkXzEBq32v9+X+oP6h0+oy0YoVQ9mLpI=
+github.com/1f349/handshake v0.0.1/go.mod h1:xd72LdnSYEr/ssjtYKO/gtehFH63mTjbRbv/9rVmq6E=
 github.com/1f349/int-byte-utils v1.3.0 h1:6kjtSO4/FnhKaNx0p8FlDwwIXt/PUqk2aAQKlwEC02Q=
 github.com/1f349/int-byte-utils v1.3.0/go.mod h1:8tL9j+ICX4q9Nog0a6pcJQiN5ACF5VCGhq72ZoXnei4=
 github.com/cloudflare/circl v1.6.1 h1:zqIqSPIndyBh1bjLVVDHMPpVKqp8Su/V+6MeDzzQBQ0=

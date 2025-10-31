@@ -5,19 +5,19 @@ package packets
 import (
 	"bytes"
 	"github.com/1f349/handshake/net/packets"
-	"github.com/1f349/pqc-handshake/crypto"
+	pqc_crypto "github.com/1f349/pqc-handshake/crypto"
 	"github.com/cloudflare/circl/sign/mldsa/mldsa44"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-var validSignedPacketSigPublicKeyPayload *packets.SignedPacketSigPublicKeyPayload = nil
-var invalidSignedPacketSigPublicKeyPayload *packets.SignedPacketSigPublicKeyPayload = nil
+var validSignedPacketSigPublicKeyPayload *packets.SignedPacketPublicKeyPayload = nil
+var invalidSignedPacketSigPublicKeyPayload *packets.SignedPacketPublicKeyPayload = nil
 
-func GetValidSignedPacketSigPublicKeyPayload() *packets.SignedPacketSigPublicKeyPayload {
+func GetValidSignedPacketSigPublicKeyPayload() *packets.SignedPacketPublicKeyPayload {
 	if validSignedPacketSigPublicKeyPayload == nil {
-		validSignedPacketSigPublicKeyPayload = &packets.SignedPacketSigPublicKeyPayload{}
-		scheme := crypto.WrapSig(mldsa44.Scheme())
+		validSignedPacketSigPublicKeyPayload = &packets.SignedPacketPublicKeyPayload{}
+		scheme := pqc_crypto.WrapSig(mldsa44.Scheme())
 		k, _, err := scheme.GenerateKeyPair()
 		if err != nil {
 			panic(err)
@@ -31,11 +31,11 @@ func GetValidSignedPacketSigPublicKeyPayload() *packets.SignedPacketSigPublicKey
 	return validSignedPacketSigPublicKeyPayload
 }
 
-func GetInvalidSignedPacketSigPublicKeyPayload() *packets.SignedPacketSigPublicKeyPayload {
+func GetInvalidSignedPacketSigPublicKeyPayload() *packets.SignedPacketPublicKeyPayload {
 	if invalidSignedPacketSigPublicKeyPayload != nil {
 		return invalidSignedPacketSigPublicKeyPayload
 	}
-	invalidSignedPacketSigPublicKeyPayload = &packets.SignedPacketSigPublicKeyPayload{Data: []byte{0, 1, 2, 3}}
+	invalidSignedPacketSigPublicKeyPayload = &packets.SignedPacketPublicKeyPayload{Data: []byte{0, 1, 2, 3}}
 	return invalidSignedPacketSigPublicKeyPayload
 }
 
@@ -46,12 +46,12 @@ func TestValidSignedPacketSigPublicKeyPayload(t *testing.T) {
 	assert.NoError(t, err)
 	assert.GreaterOrEqual(t, n, int64(0))
 	assert.Equal(t, payload.Size(), uint(n))
-	rPayload := &packets.SignedPacketSigPublicKeyPayload{}
+	rPayload := &packets.SignedPacketPublicKeyPayload{}
 	n, err = rPayload.ReadFrom(buff)
 	assert.NoError(t, err)
 	assert.GreaterOrEqual(t, n, int64(0))
 	assert.Equal(t, payload.Size(), uint(n))
-	k, err := rPayload.Load(crypto.WrapSig(mldsa44.Scheme()))
+	k, err := rPayload.Load(pqc_crypto.WrapSig(mldsa44.Scheme()))
 	assert.NoError(t, err)
 	assert.NotNil(t, k)
 	ko, err := payload.Load(nil)
@@ -69,12 +69,12 @@ func TestInvalidSignedPacketSigPublicKeyPayload(t *testing.T) {
 	assert.NoError(t, err)
 	assert.GreaterOrEqual(t, n, int64(0))
 	assert.Equal(t, payload.Size(), uint(n))
-	rPayload := &packets.SignedPacketSigPublicKeyPayload{}
+	rPayload := &packets.SignedPacketPublicKeyPayload{}
 	n, err = rPayload.ReadFrom(buff)
 	assert.NoError(t, err)
 	assert.GreaterOrEqual(t, n, int64(0))
 	assert.Equal(t, payload.Size(), uint(n))
-	k, err := rPayload.Load(crypto.WrapSig(mldsa44.Scheme()))
+	k, err := rPayload.Load(pqc_crypto.WrapSig(mldsa44.Scheme()))
 	assert.Error(t, err)
 	assert.Nil(t, k)
 }
