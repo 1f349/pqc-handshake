@@ -1,7 +1,9 @@
-github.com/1f349/handshake v0.0.1 h1:RMTckO9Xja7MkXzEBq32v9+X+oP6h0+oy0YoVQ9mLpI=
-github.com/1f349/handshake v0.0.1/go.mod h1:xd72LdnSYEr/ssjtYKO/gtehFH63mTjbRbv/9rVmq6E=
+github.com/1f349/handshake v0.0.3 h1:UUfpMM6PvrBY/r6jIfevUtONjvzajuCbRshG8sPm2Io=
+github.com/1f349/handshake v0.0.3/go.mod h1:lNmhrEydraASzf+Ggqp17lDrzxeopXulFMinzw5cyf8=
 github.com/1f349/int-byte-utils v1.3.0 h1:6kjtSO4/FnhKaNx0p8FlDwwIXt/PUqk2aAQKlwEC02Q=
 github.com/1f349/int-byte-utils v1.3.0/go.mod h1:8tL9j+ICX4q9Nog0a6pcJQiN5ACF5VCGhq72ZoXnei4=
+github.com/1f349/queue v1.1.2 h1:rZPK7nHwuNhiHgVnjpmGbAJx3ZUInZiV3QYWWBh96zg=
+github.com/1f349/queue v1.1.2/go.mod h1:QUm8pnP1L05QdBAVzafPTViTlHHQl7NVz6jxtgOglbw=
 github.com/cloudflare/circl v1.6.1 h1:zqIqSPIndyBh1bjLVVDHMPpVKqp8Su/V+6MeDzzQBQ0=
 github.com/cloudflare/circl v1.6.1/go.mod h1:uddAzsPgqdMAYatqJ0lsjX1oECcQLIlRpzZh3pJrofs=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=

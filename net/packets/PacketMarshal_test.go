@@ -1,4 +1,4 @@
-// (C) 1f349 2025 - BSD-3-Clause License
+// (C) 1f349 2026 - BSD-3-Clause License
 
 package packets
 
@@ -9,6 +9,7 @@ import (
 	"crypto/subtle"
 	"errors"
 	"github.com/1f349/handshake/crypto"
+	"github.com/1f349/handshake/net/mitm"
 	"github.com/1f349/handshake/net/packets"
 	pqc_crypto "github.com/1f349/pqc-handshake/crypto"
 	"github.com/cloudflare/circl/kem/mlkem/mlkem768"
@@ -64,8 +65,19 @@ func TestPacketMarshalFragmentedSmallMTU(t *testing.T) {
 	sharedPacketMarshalTest(t, newMTUTransport(MTU), MTU)
 }
 
+func TestPacketMarshalFragmentedStream(t *testing.T) {
+	const MTU = 1280
+	sharedPacketMarshalTest(t, newMTUTransportStream(MTU), MTU)
+}
+
+func TestPacketMarshalFragmentedSmallMTUStream(t *testing.T) {
+	//const MTU = HeaderSizeForFragmentation + 1 //Note, this may be the minimum valid, but the maximum number of fragments is 255
+	const MTU = 64
+	sharedPacketMarshalTest(t, newMTUTransportStream(MTU), MTU)
+}
+
 func sharedPacketMarshalTest(t *testing.T, transport io.ReadWriter, mtu uint) {
-	marshal := &packets.PacketMarshaller{
+	marshal := &packets.HandshakePacketMarshaller{
 		Conn: transport,
 		MTU:  mtu,
 	}
@@ -254,7 +266,7 @@ func emptyPayloadChecker(packets.PacketPayload, packets.PacketPayload) bool {
 	return true
 }
 
-func readOnePayload(t *testing.T, marshal *packets.PacketMarshaller) (*packets.PacketHeader, packets.PacketPayload) {
+func readOnePayload(t *testing.T, marshal *packets.HandshakePacketMarshaller) (*packets.PacketHeader, packets.PacketPayload) {
 	var rHeader *packets.PacketHeader
 	var rPayload packets.PacketPayload
 	err := packets.ErrFragmentReceived
@@ -267,7 +279,7 @@ func readOnePayload(t *testing.T, marshal *packets.PacketMarshaller) (*packets.P
 	return rHeader, rPayload
 }
 
-func testOnePayload(t *testing.T, name string, marshal *packets.PacketMarshaller, header packets.PacketHeader, payload packets.PacketPayload, payloadChecker func(o packets.PacketPayload, r packets.PacketPayload) bool) {
+func testOnePayload(t *testing.T, name string, marshal *packets.HandshakePacketMarshaller, header packets.PacketHeader, payload packets.PacketPayload, payloadChecker func(o packets.PacketPayload, r packets.PacketPayload) bool) {
 	t.Run(name, func(t *testing.T) {
 		err := marshal.Marshal(header, payload)
 		assert.NoError(t, err)
@@ -290,58 +302,11 @@ func testOnePayload(t *testing.T, name string, marshal *packets.PacketMarshaller
 	})
 }
 
-func TestMTUWriterReader(t *testing.T) {
-	a1 := []byte{1, 2, 3, 4, 5, 6, 7, 8}
-	a2 := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9}
-
-	buff := new(bytes.Buffer)
-	writer := &mtuWriter{mtu: 8, target: buff}
-	n, err := writer.Write(a1)
-	assert.NoError(t, err)
-	assert.Equal(t, 8, n)
-
-	n, err = writer.Write(a2)
-	assert.Error(t, err)
-	assert.Equal(t, packets.ErrTooMuchData, err)
-	assert.NotEqual(t, 8, n)
-	assert.Equal(t, 0, n)
-
-	n, err = writer.Write(a1)
-	assert.NoError(t, err)
-	assert.Equal(t, 8, n)
-
-	n, err = writer.Write([]byte{1, 2, 3, 4})
-	assert.NoError(t, err)
-	assert.Equal(t, 4, n)
-	assert.Equal(t, 20, buff.Len())
-
-	reader := &mtuReader{mtuBuff: make([]byte, 8), target: buff}
-
-	data := make([]byte, 8)
-	n, err = reader.Read(data)
-	assert.NoError(t, err)
-	assert.Equal(t, 8, n)
-	assert.True(t, slices.Equal(a1, data))
-	data = data[:6]
-
-	n, err = reader.Read(data)
-	assert.NoError(t, err)
-	assert.Equal(t, 6, n)
-	assert.True(t, slices.Equal(a1[:6], data))
-	data = make([]byte, 7)
-
-	n, err = reader.Read(data)
-	assert.NoError(t, err)
-	assert.NotEqual(t, 8, n)
-	assert.Equal(t, 4, n)
-	assert.True(t, slices.Equal([]byte{1, 2, 3, 4, 0, 0, 0}, data))
-}
-
 func TestFixedTransport(t *testing.T) {
 	const mtu = 10
 	transport := &fixedTransport{queue: make([][]byte, 0)}
-	writer := &mtuWriter{mtu: mtu, target: transport}
-	reader := &mtuReader{mtuBuff: make([]byte, mtu), target: transport}
+	writer := mitm.NewMTUTransport(transport, mtu)
+	reader := writer
 	a1 := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 	a2 := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}
 	a3 := []byte{1, 2, 3, 4}
@@ -354,7 +319,7 @@ func TestFixedTransport(t *testing.T) {
 	assert.Error(t, err)
 	assert.NotEqual(t, mtu, n)
 	assert.Equal(t, 0, n)
-	assert.Equal(t, packets.ErrTooMuchData, err)
+	assert.Equal(t, mitm.ErrTooMuchData, err)
 
 	n, err = writer.Write(a1)
 	assert.NoError(t, err)
@@ -399,64 +364,22 @@ func TestFixedTransport(t *testing.T) {
 	assert.Equal(t, 0, n)
 }
 
-func newMTUTransport(mtu int) *mtuTransport {
+func newMTUTransport(mtu int) *mitm.MTUTransport {
 	transport := &fixedTransport{queue: make([][]byte, 0)}
-	return &mtuTransport{
-		reader: &mtuReader{
-			mtuBuff: make([]byte, mtu),
-			target:  transport,
-		},
-		writer: &mtuWriter{
-			mtu:    mtu,
-			target: transport,
-		},
-	}
+	return mitm.NewMTUTransport(transport, mtu)
 }
 
-type mtuTransport struct {
-	reader *mtuReader
-	writer *mtuWriter
-}
-
-func (m *mtuTransport) Read(p []byte) (n int, err error) {
-	return m.reader.Read(p)
-}
-
-func (m *mtuTransport) Write(p []byte) (n int, err error) {
-	return m.writer.Write(p)
-}
-
-type mtuReader struct {
-	mtuBuff []byte
-	target  io.Reader
-}
-
-func (m *mtuReader) Read(p []byte) (n int, err error) {
-	if len(p) == 0 {
-		return 0, nil
-	}
-	n, err = m.target.Read(m.mtuBuff)
-	n = copy(p, m.mtuBuff[:min(n, len(p))])
-	return
-}
-
-type mtuWriter struct {
-	mtu    int
-	target io.Writer
-}
-
-func (m *mtuWriter) Write(p []byte) (n int, err error) {
-	if len(p) == 0 {
-		return 0, nil
-	}
-	if len(p) > m.mtu {
-		return 0, packets.ErrTooMuchData
-	}
-	return m.target.Write(p)
+func newMTUTransportStream(mtu int) *mitm.MTUTransport {
+	transport := mitm.NewStream(1024, nil, nil)
+	return mitm.NewMTUTransport(transport, mtu)
 }
 
 type fixedTransport struct {
 	queue [][]byte
+}
+
+func (m *fixedTransport) Close() error {
+	return nil
 }
 
 func (m *fixedTransport) Read(p []byte) (n int, err error) {
